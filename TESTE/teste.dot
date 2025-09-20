@@ -7,14 +7,14 @@ digraph MicroPascalAFD {
     q0 [label="q0"];
 
     // Estados finais com tamanho maior
-    qid [label="ID", shape=doublecircle, width=1.1, height=1.1, fontsize=16, pos="7,2!"];
-    qkw [label="KW", shape=doublecircle, width=1.8, height=1.8, fontsize=16];
+    qid [label="ID", shape=doublecircle, width=1.0, height=1.0, fontsize=13,  pos="32,2!"];
+    qkw [label="KW", shape=doublecircle, width=1.0, height=1.0, fontsize=13];
     qop [label="OP", shape=doublecircle];
     qsmb [label="SMB", shape=doublecircle];
 
     // Identificadores
     q0 -> qid [label="a-zA-Z"];
-    qid -> qid [label="a-zA-Z0-9"];
+    qid -> qid [label="a-z / 0-9"];
 
     // ---------- Palavras-chave ----------
     q0 -> qp [label="p"];
@@ -25,13 +25,13 @@ digraph MicroPascalAFD {
     qprogr -> qprogra [label="a"];
     qprogra -> qprogram [label="m"];
     qprogram -> qkw [label=""];
-    qprogram -> qid [label="a-zA-Z0-9"];
+    qprogram -> qid [label="a-z / 0-9"];
 
     q0 -> qv [label="v"];
     qv -> qva [label="a"];
     qva -> qvar [label="r"];
     qvar -> qkw [label=""];
-    qvar -> qid [label="a-zA-Z0-9"];
+    qvar -> qid [label="a-z / 0-9"];
 
     q0 -> qi [label="i"];
     qi -> qin [label="n"];
@@ -41,14 +41,14 @@ digraph MicroPascalAFD {
     qinter -> qinteg [label="e"];
     qinteg -> qinteger [label="r"];
     qinteger -> qkw [label=""];
-    qinteger -> qid [label="a-zA-Z0-9"];
+    qinteger -> qid [label="a-z / 0-9"];
 
     q0 -> qr [label="r"];
     qr -> qre [label="e"];
     qre -> qrea [label="a"];
     qrea -> qreal [label="l"];
     qreal -> qkw [label=""];
-    qreal -> qid [label="a-zA-Z0-9"];
+    qreal -> qid [label="a-z / 0-9"];
 
     q0 -> qb [label="b"];
     qb -> qbe [label="e"];
@@ -56,32 +56,32 @@ digraph MicroPascalAFD {
     qbeg -> qbegi [label="i"];
     qbegi -> qbegin [label="n"];
     qbegin -> qkw [label=""];
-    qbegin -> qid [label="a-zA-Z0-9"];
+    qbegin -> qid [label="a-z / 0-9"];
 
     q0 -> qe [label="e"];
     qe -> qen [label="n"];
     qen -> qend [label="d"];
     qend -> qkw [label=""];
-    qend -> qid [label="a-zA-Z0-9"];
+    qend -> qid [label="a-z / 0-9"];
 
     q0 -> qif0 [label="i"];
     qif0 -> qif1 [label="f"];
     qif1 -> qkw [label=""];
-    qif1 -> qid [label="a-zA-Z0-9"];
+    qif1 -> qid [label="a-z / 0-9"];
 
     q0 -> qth0 [label="t"];
     qth0 -> qth1 [label="h"];
     qth1 -> qth2 [label="e"];
     qth2 -> qthen [label="n"];
     qthen -> qkw [label=""];
-    qthen -> qid [label="a-zA-Z0-9"];
+    qthen -> qid [label="a-z / 0-9"];
 
     q0 -> qe0 [label="e"];
     qe0 -> qe1 [label="l"];
     qe1 -> qe2 [label="s"];
     qe2 -> qelse [label="e"];
     qelse -> qkw [label=""];
-    qelse -> qid [label="a-zA-Z0-9"];
+    qelse -> qid [label="a-z / 0-9"];
 
     q0 -> qw0 [label="w"];
     qw0 -> qw1 [label="h"];
@@ -89,12 +89,12 @@ digraph MicroPascalAFD {
     qw2 -> qw3 [label="l"];
     qw3 -> qwhile [label="e"];
     qwhile -> qkw [label=""];
-    qwhile -> qid [label="a-zA-Z0-9"];
+    qwhile -> qid [label="a-z / 0-9"];
 
     q0 -> qd [label="d"];
     qd -> qdo [label="o"];
     qdo -> qkw [label=""];
-    qdo -> qid [label="a-zA-Z0-9"];
+    qdo -> qid [label="a-z / 0-9"];
 
     // ---------- Operadores ----------
     q0 -> qop [label="="];
