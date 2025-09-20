@@ -10,13 +10,35 @@
 #define TS_SIZE 1000
 
 typedef enum {
+    // Identificadores e literais
     TK_IDENTIFIER,
     TK_KEYWORD,
     TK_INTEGER,
     TK_REAL,
-    TK_OPERATOR,
-    TK_DELIMITER,
-    TK_ASSIGNMENT,
+    
+    // Operadores
+    OP_EQ,      // =
+    OP_GE,      // >=
+    OP_MUL,     // *
+    OP_NE,      // <>
+    OP_LE,      // <=
+    OP_DIV,     // /
+    OP_GT,      // >
+    OP_AD,      // +
+    OP_ASS,     // :=
+    OP_LT,      // <
+    OP_MIN,     // -
+    
+    // Símbolos
+    SMB_OBC,    // {
+    SMB_COM,    // ,
+    SMB_CBC,    // }
+    SMB_SEM,    // ;
+    SMB_OPA,    // (
+    SMB_CPA,    // )
+    SMB_DOT,    // .
+    SMB_COL,    // :
+    
     TK_UNKNOWN
 } TokenType;
 
@@ -93,9 +115,30 @@ const char* getTokenTypeName(TokenType type) {
         case TK_KEYWORD: return "KEYWORD";
         case TK_INTEGER: return "INTEGER";
         case TK_REAL: return "REAL";
-        case TK_OPERATOR: return "OPERATOR";
-        case TK_DELIMITER: return "DELIMITER";
-        case TK_ASSIGNMENT: return "ASSIGNMENT";
+        
+        // Operadores
+        case OP_EQ: return "OP_EQ";
+        case OP_GE: return "OP_GE";
+        case OP_MUL: return "OP_MUL";
+        case OP_NE: return "OP_NE";
+        case OP_LE: return "OP_LE";
+        case OP_DIV: return "OP_DIV";
+        case OP_GT: return "OP_GT";
+        case OP_AD: return "OP_AD";
+        case OP_ASS: return "OP_ASS";
+        case OP_LT: return "OP_LT";
+        case OP_MIN: return "OP_MIN";
+        
+        // Símbolos
+        case SMB_OBC: return "SMB_OBC";
+        case SMB_COM: return "SMB_COM";
+        case SMB_CBC: return "SMB_CBC";
+        case SMB_SEM: return "SMB_SEM";
+        case SMB_OPA: return "SMB_OPA";
+        case SMB_CPA: return "SMB_CPA";
+        case SMB_DOT: return "SMB_DOT";
+        case SMB_COL: return "SMB_COL";
+        
         default: return "UNKNOWN";
     }
 }
@@ -146,7 +189,6 @@ Token analyzeNumber(FILE* fp, int startLine, int startCol, int firstChar) {
     char lexeme[MAX_LEXEMA];
     int isReal = 0;
     int hasExponent = 0;
-    int hasSign = 0;
     
     lexeme[len++] = firstChar;
     
@@ -212,13 +254,22 @@ Token analyzeSymbol(FILE* fp, int startLine, int startCol, int firstChar) {
         
         if(strcmp(twoChars, ":=") == 0) {
             strcpy(token.lexeme, twoChars);
-            token.type = TK_ASSIGNMENT;
+            token.type = OP_ASS;
             return token;
         }
-        else if(strcmp(twoChars, "<=") == 0 || strcmp(twoChars, ">=") == 0 || 
-                strcmp(twoChars, "<>") == 0) {
+        else if(strcmp(twoChars, "<=") == 0) {
             strcpy(token.lexeme, twoChars);
-            token.type = TK_OPERATOR;
+            token.type = OP_LE;
+            return token;
+        }
+        else if(strcmp(twoChars, ">=") == 0) {
+            strcpy(token.lexeme, twoChars);
+            token.type = OP_GE;
+            return token;
+        }
+        else if(strcmp(twoChars, "<>") == 0) {
+            strcpy(token.lexeme, twoChars);
+            token.type = OP_NE;
             return token;
         }
         else {
@@ -227,19 +278,27 @@ Token analyzeSymbol(FILE* fp, int startLine, int startCol, int firstChar) {
         }
     }
     
-    // Operadores e delimitadores de um caractere
+    // Operadores e símbolos de um caractere
     token.lexeme[0] = firstChar;
     token.lexeme[1] = '\0';
     
     switch(firstChar) {
-        case '+': case '-': case '*': case '/':
-        case '=': case '<': case '>':
-            token.type = TK_OPERATOR;
-            break;
-            
-        case ';': case ',': case ':': case '(': case ')': case '.':
-            token.type = TK_DELIMITER;
-            break;
+        case '=': token.type = OP_EQ; break;
+        case '<': token.type = OP_LT; break;
+        case '>': token.type = OP_GT; break;
+        case '+': token.type = OP_AD; break;
+        case '-': token.type = OP_MIN; break;
+        case '*': token.type = OP_MUL; break;
+        case '/': token.type = OP_DIV; break;
+        
+        case '{': token.type = SMB_OBC; break;
+        case '}': token.type = SMB_CBC; break;
+        case ',': token.type = SMB_COM; break;
+        case ';': token.type = SMB_SEM; break;
+        case '(': token.type = SMB_OPA; break;
+        case ')': token.type = SMB_CPA; break;
+        case '.': token.type = SMB_DOT; break;
+        case ':': token.type = SMB_COL; break;
             
         default:
             token.type = TK_UNKNOWN;
