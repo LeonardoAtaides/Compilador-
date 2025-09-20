@@ -1,3 +1,6 @@
+// cd Trabalho -> gcc analisadorlexico.c -o analisadorlexico
+// .\analisadorlexico.exe teste.arquivocerto
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
