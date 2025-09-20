@@ -62,26 +62,6 @@ const char* keywords[] = {
 };
 const int keywordCount = 11;
 
-// Função para verificar se um caractere é ASCII válido para a linguagem
-int isValidChar(int c) {
-    return isalnum(c) || c == '_' || c == '+' || c == '-' || c == '*' || c == '/' ||
-           c == '=' || c == '<' || c == '>' || c == ':' || c == ';' || c == ',' ||
-           c == '.' || c == '(' || c == ')' || c == '{' || c == '}' || isspace(c);
-}
-
-// Função para escrever string com caracteres especiais de forma segura
-void writeSafeString(FILE* fp, const char* str) {
-    for(int i = 0; str[i] != '\0'; i++) {
-        unsigned char c = str[i];
-        if(c < 32 || c > 126) {
-            // Caractere não-ASCII ou especial - exibe como hexadecimal
-            fprintf(fp, "\\x%02X", c);
-        } else {
-            fputc(c, fp);
-        }
-    }
-}
-
 // Funções auxiliares
 void toLowerCase(char* str) {
     for(int i = 0; str[i]; i++) {
@@ -162,10 +142,8 @@ const char* getTokenTypeName(TokenType type) {
 }
 
 void writeToken(FILE* fp, Token token) {
-    // Escreve o token com formatação UTF-8 segura
-    fprintf(fp, "<%s, ", getTokenTypeName(token.type));
-    writeSafeString(fp, token.lexeme);
-    fprintf(fp, "> Line: %d, Column: %d\n", token.line, token.column);
+    fprintf(fp, "<%s, %s> Line: %d, Column: %d\n", 
+            getTokenTypeName(token.type), token.lexeme, token.line, token.column);
 }
 
 // Analisa identificador ou palavra-chave
@@ -322,14 +300,9 @@ Token analyzeSymbol(FILE* fp, int startLine, int startCol, int firstChar) {
             
         default:
             token.type = TK_UNKNOWN;
-            // Mostrar caractere desconhecido de forma segura
-            if(firstChar < 32 || firstChar > 126) {
-                printf("Erro léxico: caractere desconhecido (\\x%02X) na linha %d, coluna %d\n", 
-                       (unsigned char)firstChar, startLine, startCol);
-            } else {
-                printf("Erro léxico: caractere desconhecido '%c' na linha %d, coluna %d\n", 
-                       firstChar, startLine, startCol);
-            }
+            // Mostrar caractere desconhecido
+            printf("Erro léxico: caractere desconhecido '%c' (0x%02X) na linha %d, coluna %d\n", 
+                   isprint(firstChar) ? firstChar : ' ', firstChar, startLine, startCol);
             break;
     }
     
@@ -339,9 +312,6 @@ Token analyzeSymbol(FILE* fp, int startLine, int startCol, int firstChar) {
 // Função principal do analisador léxico
 void lexicalAnalyzer(FILE* sourceFile, FILE* lexFile) {
     int c, line = 1, column = 0;
-    
-    // Escrever BOM (Byte Order Mark) para UTF-8 no início do arquivo
-    fprintf(lexFile, "\xEF\xBB\xBF");
     
     while((c = fgetc(sourceFile)) != EOF) {
         column++;
@@ -411,13 +381,16 @@ int main(int argc, char* argv[]) {
     if(dot) *dot = '\0';
     strcat(outputFilename, ".lex");
     
-    // Abrir arquivo de saída em modo binário para melhor controle de encoding
-    FILE* lexFile = fopen(outputFilename, "wb");
+    // Abrir arquivo de saída em modo texto com UTF-8
+    FILE* lexFile = fopen(outputFilename, "w");
     if(!lexFile) {
         printf("Erro ao criar arquivo de saída.\n");
         fclose(sourceFile);
         return 1;
     }
+    
+    // Escrever BOM (Byte Order Mark) para UTF-8 no início do arquivo
+    fprintf(lexFile, "\xEF\xBB\xBF");
     
     // Inicializar tabela de símbolos com palavras reservadas
     initializeSymbolTable();
@@ -435,7 +408,7 @@ int main(int argc, char* argv[]) {
         printf("<%s, %s>\n", symbolTable[i].lexeme, getTokenTypeName(symbolTable[i].type));
     }
     
-    printf("\nAnálise léxica concluída. Resultados salvos em %s\n", outputFilename);
+    printf("\nAnálise léxica concluída. Resultados salvos em %s (UTF-8)\n", outputFilename);
     
     return 0;
 }
