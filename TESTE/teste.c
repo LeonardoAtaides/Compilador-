@@ -1,3 +1,8 @@
+// gcc teste.c -o analisadorlexico
+// .\analisadorlexico.exe teste.arquivocerto
+// .\analisadorlexico.exe teste.arquivoerrado
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
