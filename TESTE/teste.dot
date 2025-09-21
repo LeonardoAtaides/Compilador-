@@ -1,121 +1,45 @@
+
 digraph MicroPascalAFD {
     rankdir=LR;
-    size="14,6";
     node [shape=circle];
 
     // Estado inicial
     q0 [label="q0"];
 
-    // Estados finais com tamanho maior
-    qid [label="ID", shape=doublecircle, width=1.0, height=1.0, fontsize=13,  pos="32,2!"];
-    qkw [label="KW", shape=doublecircle, width=1.0, height=1.0, fontsize=13];
-    qop [label="OP", shape=doublecircle];
-    qsmb [label="SMB", shape=doublecircle];
+    // Estados finais maiores
+    qid [label="ID", shape=doublecircle, width=1.5, height=1.5, fontsize=16];
+    qkw [label="KW", shape=doublecircle, width=1.5, height=1.5, fontsize=16];
+    qop [label="OP", shape=doublecircle, width=1.2, height=1.2, fontsize=14];
+    qsmb [label="SMB", shape=doublecircle, width=1.2, height=1.2, fontsize=14];
+
+    { rank = same; qid; qkw; qop; qsmb; }  // todos no mesmo nível horizontal
 
     // Identificadores
-    q0 -> qid [label="a-zA-Z"];
-    qid -> qid [label="a-z / 0-9"];
+    q0 -> qid [label="a-z / 0-9"];
 
-    // ---------- Palavras-chave ----------
-    q0 -> qp [label="p"];
-    qp -> qpr [label="r"];
-    qpr -> qpro [label="o"];
-    qpro -> qprog [label="g"];
-    qprog -> qprogr [label="r"];
-    qprogr -> qprogra [label="a"];
-    qprogra -> qprogram [label="m"];
-    qprogram -> qkw [label=""];
-    qprogram -> qid [label="a-z / 0-9"];
 
-    q0 -> qv [label="v"];
-    qv -> qva [label="a"];
-    qva -> qvar [label="r"];
-    qvar -> qkw [label=""];
-    qvar -> qid [label="a-z / 0-9"];
+    // Palavras-chave (só exemplo com 'program')
+    q0 -> q1 [label="b , d, e, i, t, p, r, v , w"];
+    q1 ->  qkw [label="begin, do, else, end, if, integer,then, program, real, var, while "];
+    q1 -> qid [label="a-z / 0-9"];
 
-    q0 -> qi [label="i"];
-    qi -> qin [label="n"];
-    qin -> qint [label="t"];
-    qint -> qinte [label="e"];
-    qinte -> qinter [label="g"];
-    qinter -> qinteg [label="e"];
-    qinteg -> qinteger [label="r"];
-    qinteger -> qkw [label=""];
-    qinteger -> qid [label="a-z / 0-9"];
+    // Operadores
+    q0 -> qop [label="=, +, -, *, /"];
+    q0 -> q2 [label="<"];
+    q0 -> q5 [label=">"];
 
-    q0 -> qr [label="r"];
-    qr -> qre [label="e"];
-    qre -> qrea [label="a"];
-    qrea -> qreal [label="l"];
-    qreal -> qkw [label=""];
-    qreal -> qid [label="a-z / 0-9"];
+    q2 -> q3 [label="="];
+    q2 -> q4 [label=">"];
+    q2 -> qop [label=""];
 
-    q0 -> qb [label="b"];
-    qb -> qbe [label="e"];
-    qbe -> qbeg [label="g"];
-    qbeg -> qbegi [label="i"];
-    qbegi -> qbegin [label="n"];
-    qbegin -> qkw [label=""];
-    qbegin -> qid [label="a-z / 0-9"];
+    q5 -> q6 [label="="];
+    q5 -> qop [label=""];
+    
 
-    q0 -> qe [label="e"];
-    qe -> qen [label="n"];
-    qen -> qend [label="d"];
-    qend -> qkw [label=""];
-    qend -> qid [label="a-z / 0-9"];
-
-    q0 -> qif0 [label="i"];
-    qif0 -> qif1 [label="f"];
-    qif1 -> qkw [label=""];
-    qif1 -> qid [label="a-z / 0-9"];
-
-    q0 -> qth0 [label="t"];
-    qth0 -> qth1 [label="h"];
-    qth1 -> qth2 [label="e"];
-    qth2 -> qthen [label="n"];
-    qthen -> qkw [label=""];
-    qthen -> qid [label="a-z / 0-9"];
-
-    q0 -> qe0 [label="e"];
-    qe0 -> qe1 [label="l"];
-    qe1 -> qe2 [label="s"];
-    qe2 -> qelse [label="e"];
-    qelse -> qkw [label=""];
-    qelse -> qid [label="a-z / 0-9"];
-
-    q0 -> qw0 [label="w"];
-    qw0 -> qw1 [label="h"];
-    qw1 -> qw2 [label="i"];
-    qw2 -> qw3 [label="l"];
-    qw3 -> qwhile [label="e"];
-    qwhile -> qkw [label=""];
-    qwhile -> qid [label="a-z / 0-9"];
-
-    q0 -> qd [label="d"];
-    qd -> qdo [label="o"];
-    qdo -> qkw [label=""];
-    qdo -> qid [label="a-z / 0-9"];
-
-    // ---------- Operadores ----------
-    q0 -> qop [label="="];
-    q0 -> qop [label="+"]; 
-    q0 -> qop [label="-"];
-    q0 -> qop [label="*"];
-    q0 -> qop [label="/"];
-    q0 -> qlt [label="<"];
-    q0 -> qgt [label=">"];
-
-    qlt -> qle [label="="];
-    qlt -> qne [label=">"];
-    qlt -> qop [label=""];
-
-    qgt -> qge [label="="];
-    qgt -> qop [label=""];
-
-    qle -> qop [label=""];
-    qge -> qop [label=""];
-    qne -> qop [label=""];
-
-    // ---------- Símbolos ----------
+    q3 -> qop [label=""];
+    q4 -> qop [label=""];
+    q6 -> qop [label=""];
+    
+    // Símbolos
     q0 -> qsmb [label="{ } ( ) ; ,"];
 }
