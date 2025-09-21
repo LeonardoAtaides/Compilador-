@@ -1,7 +1,3 @@
-// gcc teste.c -o analisadorlexico
-// .\analisadorlexico.exe teste.arquivocerto
-// .\analisadorlexico.exe teste.arquivoerrado
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -24,7 +20,7 @@ typedef enum {
     
     // Símbolos
     SMB_OBC, SMB_COM, SMB_CBC, SMB_SEM, SMB_OPA, SMB_CPA,
-    SMB_COLON, SMB_DOT, // Novos símbolos adicionados
+    SMB_COLON, SMB_DOT,
     
     // Identificadores e literais
     ID, LIT_INT, LIT_REAL, LIT_REAL_EXP,
@@ -78,6 +74,7 @@ char peek_char(Lexer* lexer);
 bool is_valid_operator_combination(char current, char next);
 bool is_valid_single_char_operator(char c);
 bool is_valid_operator_start(char c);
+void handle_unclosed_comment(Lexer* lexer, Token* token);
 
 // Utility functions
 void to_lower_case(char* str);
@@ -116,8 +113,8 @@ const char* token_type_to_string(TokenType type) {
         case SMB_SEM: return "SMB_SEM";
         case SMB_OPA: return "SMB_OPA";
         case SMB_CPA: return "SMB_CPA";
-        case SMB_COLON: return "SMB_COLON"; // Novo
-        case SMB_DOT: return "SMB_DOT";     // Novo
+        case SMB_COLON: return "SMB_COLON";
+        case SMB_DOT: return "SMB_DOT";
         
         case ID: return "ID";
         case LIT_INT: return "LIT_INT";
@@ -180,7 +177,7 @@ Symbol* find_symbol(SymbolTable* table, const char* name) {
 void print_symbol_table(SymbolTable* table) {
     printf("\n=== TABELA DE SÍMBOLOS ===\n");
     printf("%-20s %-15s\n", "Nome", "Tipo");
-    printf("----------------------------\n");
+    printf("--------------------------------\n");
     
     for (int i = 0; i < table->count; i++) {
         printf("%-20s ", table->symbols[i].name);
@@ -237,6 +234,35 @@ bool is_valid_operator_combination(char current, char next) {
     
     // Combinações inválidas
     return false;
+}
+
+void handle_unclosed_comment(Lexer* lexer, Token* token) {
+    int start_line = lexer->line;
+    int start_column = lexer->column;
+    
+    // Avançar até encontrar } ou fim de arquivo
+    while (lexer->current_char != EOF && lexer->current_char != '}') {
+        if (lexer->current_char == '\n') {
+            lexer->line++;
+            lexer->column = 1;
+        } else {
+            lexer->column++;
+        }
+        lexer->current_char = fgetc(lexer->file);
+    }
+    
+    if (lexer->current_char == '}') {
+        // Comentário fechado eventualmente, mas com conteúdo
+        token->type = TOK_ERROR;
+        sprintf(token->lexeme, "Conteúdo entre { } não permitido (comentários não suportados)");
+        lexer->current_char = fgetc(lexer->file);
+        lexer->column++;
+    } else {
+        // Comentário não fechado até o fim do arquivo
+        token->type = TOK_ERROR;
+        sprintf(token->lexeme, "Comentário não fechado iniciado na linha %d, coluna %d", 
+                start_line, start_column);
+    }
 }
 
 // ==================== LEXER FUNCTIONS ====================
@@ -458,6 +484,36 @@ Token get_next_token(Lexer* lexer) {
             lexer->column++;
             break;
             
+        case '"': // Strings não são suportadas em MicroPascal
+            token.type = TOK_ERROR;
+            strcpy(token.lexeme, "Strings não são suportadas em MicroPascal");
+            // Avançar até encontrar outra aspas ou fim de linha
+            while (lexer->current_char != EOF && lexer->current_char != '"' && lexer->current_char != '\n') {
+                lexer->current_char = fgetc(lexer->file);
+                lexer->column++;
+            }
+            if (lexer->current_char == '\n') {
+                sprintf(token.lexeme, "String não fechada antes da quebra de linha");
+            } else if (lexer->current_char == '"') {
+                lexer->current_char = fgetc(lexer->file);
+                lexer->column++;
+            }
+            break;
+            
+        case '{':
+            // Verificar se há conteúdo entre { } (não permitido em MicroPascal)
+            if (peek_char(lexer) != '}') {
+                handle_unclosed_comment(lexer, &token);
+                return token;
+            }
+            
+            token.lexeme[0] = lexer->current_char;
+            token.lexeme[1] = '\0';
+            token.type = SMB_OBC;
+            lexer->current_char = fgetc(lexer->file);
+            lexer->column++;
+            break;
+            
         case '<':
             token.lexeme[0] = lexer->current_char;
             lexer->current_char = fgetc(lexer->file);
@@ -534,30 +590,6 @@ Token get_next_token(Lexer* lexer) {
             token.lexeme[0] = lexer->current_char;
             token.lexeme[1] = '\0';
             token.type = OP_DIV;
-            lexer->current_char = fgetc(lexer->file);
-            lexer->column++;
-            break;
-            
-        case '{':
-            // Verificar se há conteúdo dentro de { } (não permitido em MicroPascal)
-            if (peek_char(lexer) != '}') {
-                token.type = TOK_ERROR;
-                strcpy(token.lexeme, "Conteúdo entre { } não permitido (comentários não suportados)");
-                // Avançar até encontrar } ou fim de linha
-                while (lexer->current_char != EOF && lexer->current_char != '}' && lexer->current_char != '\n') {
-                    lexer->current_char = fgetc(lexer->file);
-                    lexer->column++;
-                }
-                if (lexer->current_char == '}') {
-                    lexer->current_char = fgetc(lexer->file);
-                    lexer->column++;
-                }
-                return token;
-            }
-            
-            token.lexeme[0] = lexer->current_char;
-            token.lexeme[1] = '\0';
-            token.type = SMB_OBC;
             lexer->current_char = fgetc(lexer->file);
             lexer->column++;
             break;
@@ -641,13 +673,13 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     
-    fprintf(output_file, "\t\t\t=== TOKENS RECONHECIDOS ===\n");
-    fprintf(output_file, "%-15s %-18s %-8s %-8s\n", "TOKEN", "LEXEMA", "LINHA", "COLUNA");
-    fprintf(output_file, "--------------------------------------------------\n");
+    fprintf(output_file, "=== TOKENS RECONHECIDOS ===\n");
+    fprintf(output_file, "%-15s %-20s %-8s %-8s\n", "TOKEN", "LEXEMA", "LINHA", "COLUNA");
+    fprintf(output_file, "------------------------------------------------\n");
     
-    printf("\t   === TOKENS RECONHECIDOS ===\n");
-    printf("%-15s %-18s %-8s %-8s\n", "TOKEN", "LEXEMA", "LINHA", "COLUNA");
-    printf("--------------------------------------------------\n");
+    printf("=== TOKENS RECONHECIDOS ===\n");
+    printf("%-15s %-20s %-8s %-8s\n", "TOKEN", "LEXEMA", "LINHA", "COLUNA");
+    printf("------------------------------------------------\n");
     
     // Processar tokens
     Token token;
