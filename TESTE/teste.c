@@ -449,7 +449,7 @@ Token get_next_token(Lexer* lexer) {
             
         case '"': 
             token.type = TOK_ERROR;
-            strcpy(token.lexeme, "Strings não são suportadas em MicroPascal");
+            strcpy(token.lexeme, " O caracter \" não é permitido");
             while (lexer->current_char != EOF && lexer->current_char != '"' && lexer->current_char != '\n') {
                 lexer->current_char = fgetc(lexer->file);
                 lexer->column++;

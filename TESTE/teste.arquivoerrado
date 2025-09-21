@@ -2,5 +2,5 @@ program teste;
 var
 msg : integer;
 begin
-msg := 'osd';
+msg := "osd";
 end.
