@@ -666,12 +666,12 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     
-    fprintf(output_file, "=== TOKENS RECONHECIDOS ===\n");
-    fprintf(output_file, "%-15s %-20s %-8s %-8s\n", "TOKEN", "LEXEMA", "LINHA", "COLUNA");
-    fprintf(output_file, "------------------------------------------------\n");
+    fprintf(output_file, "\t\t=== TOKENS RECONHECIDOS ===\n");
+    fprintf(output_file, "%-15s %-18s %-8s %-8s\n", "TOKEN", "LEXEMA", "LINHA", "COLUNA");
+    fprintf(output_file, "--------------------------------------------------\n");
     
-    printf("=== TOKENS RECONHECIDOS ===\n");
-    printf("%-15s %-20s %-8s %-8s\n", "TOKEN", "LEXEMA", "LINHA", "COLUNA");
+    printf("\t   === TOKENS RECONHECIDOS ===\n");
+    printf("%-15s %-18s %-8s %-8s\n", "TOKEN", "LEXEMA", "LINHA", "COLUNA");
     printf("------------------------------------------------\n");
 
     Token token;
