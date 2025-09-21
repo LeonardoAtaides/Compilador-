@@ -1,5 +1,6 @@
-program erro1;
-var 1x: integer;   { identificador inválido, começa com número }
+program teste;
+var
+msg : integer;
 begin
-  x := 5;
+msg := 'osd';
 end.

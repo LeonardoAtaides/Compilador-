@@ -28,7 +28,7 @@ typedef enum {
     SMB_COLON, SMB_DOT,
     
     // Identificadores e literais
-    ID, LIT_INT, LIT_REAL, LIT_REAL_EXP,
+    ID, LIT_INT, LIT_REAL, LIT_REAL_EXP,TOK_STRING,
     
     // Fim de arquivo e erro
     TOK_EOF, TOK_ERROR
@@ -128,6 +128,8 @@ const char* token_type_to_string(TokenType type) {
         
         case TOK_EOF: return "EOF";
         case TOK_ERROR: return "ERROR";
+        case TOK_STRING: return "STRING";
+
         
         default: return "UNKNOWN";
     }
@@ -638,6 +640,45 @@ Token get_next_token(Lexer* lexer) {
             lexer->current_char = fgetc(lexer->file);
             lexer->column++;
             break;
+
+        case '\'': {
+            int start_line = lexer->line;
+            int start_column = lexer->column;
+            int i = 0;
+
+            token.lexeme[i++] = '\''; // adiciona a aspa inicial
+
+            // Pular a primeira aspa
+            lexer->current_char = fgetc(lexer->file);
+            lexer->column++;
+
+            // Ler caracteres até encontrar a aspa final ou EOF / \n
+            while (lexer->current_char != '\'' && lexer->current_char != EOF && lexer->current_char != '\n') {
+                if (i >= MAX_LEXEME - 2) { // -2 para deixar espaço para a aspa final + '\0'
+                    token.type = TOK_ERROR;
+                    sprintf(token.lexeme, "String muito longa na linha %d, coluna %d", start_line, start_column);
+                    return token;
+                }
+                token.lexeme[i++] = lexer->current_char;
+                lexer->current_char = fgetc(lexer->file);
+                lexer->column++;
+            }
+
+            // Verificar fechamento correto
+            if (lexer->current_char == '\'') {
+                token.lexeme[i++] = '\''; // adiciona a aspa final
+                token.lexeme[i] = '\0';  // fecha string
+                token.type = TOK_STRING;
+                lexer->current_char = fgetc(lexer->file); // avança após a aspa final
+                lexer->column++;
+            } else {
+                token.lexeme[i] = '\0';
+                token.type = TOK_ERROR;
+                sprintf(token.lexeme, "String não fechada na linha %d, coluna %d", start_line, start_column);
+            }
+        } break;
+
+
             
         default:
             token.type = TOK_ERROR;
