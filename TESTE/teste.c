@@ -2,14 +2,11 @@
 // .\analisadorlexico.exe teste.arquivocerto
 // .\analisadorlexico.exe teste.arquivoerrado
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 #include <stdbool.h>
-
-// ==================== DEFINITIONS ====================
 
 #define MAX_SYMBOLS 100
 #define MAX_LEXEME 100
@@ -27,7 +24,7 @@ typedef enum {
     SMB_OBC, SMB_COM, SMB_CBC, SMB_SEM, SMB_OPA, SMB_CPA,
     SMB_COLON, SMB_DOT,
     
-    // Identificadores e literais
+    // Identificadores e
     ID, LIT_INT, LIT_REAL, LIT_REAL_EXP,TOK_STRING,
     
     // Fim de arquivo e erro
@@ -59,18 +56,15 @@ typedef struct {
     SymbolTable symbol_table;
 } Lexer;
 
-// ==================== FUNCTION PROTOTYPES ====================
+// FUNÇÕES
 
-// Token functions
 const char* token_type_to_string(TokenType type);
 
-// Symbol table functions
 void init_symbol_table(SymbolTable* table);
 int insert_symbol(SymbolTable* table, const char* name, TokenType type);
 Symbol* find_symbol(SymbolTable* table, const char* name);
 void print_symbol_table(SymbolTable* table);
 
-// Lexer functions
 Lexer* init_lexer(FILE* file);
 void free_lexer(Lexer* lexer);
 Token get_next_token(Lexer* lexer);
@@ -81,10 +75,7 @@ bool is_valid_single_char_operator(char c);
 bool is_valid_operator_start(char c);
 void handle_unclosed_comment(Lexer* lexer, Token* token);
 
-// Utility functions
 void to_lower_case(char* str);
-
-// ==================== TOKEN FUNCTIONS ====================
 
 const char* token_type_to_string(TokenType type) {
     switch (type) {
@@ -130,17 +121,12 @@ const char* token_type_to_string(TokenType type) {
         case TOK_ERROR: return "ERROR";
         case TOK_STRING: return "STRING";
 
-        
         default: return "UNKNOWN";
     }
 }
 
-// ==================== SYMBOL TABLE FUNCTIONS ====================
-
 void init_symbol_table(SymbolTable* table) {
     table->count = 0;
-    
-    // Inserir palavras reservadas
     insert_symbol(table, "program", TOK_PROGRAM);
     insert_symbol(table, "var", TOK_VAR);
     insert_symbol(table, "integer", TOK_INTEGER);
@@ -155,10 +141,9 @@ void init_symbol_table(SymbolTable* table) {
 }
 
 int insert_symbol(SymbolTable* table, const char* name, TokenType type) {
-    // Verificar se já existe
     for (int i = 0; i < table->count; i++) {
         if (strcmp(table->symbols[i].name, name) == 0) {
-            return 0; // Já existe
+            return 0;
         }
     }
     
@@ -166,10 +151,9 @@ int insert_symbol(SymbolTable* table, const char* name, TokenType type) {
         strcpy(table->symbols[table->count].name, name);
         table->symbols[table->count].type = type;
         table->count++;
-        return 1; // Inserido com sucesso
-    }
-    
-    return -1; // Tabela cheia
+        return 1;
+    }  
+    return -1; 
 }
 
 Symbol* find_symbol(SymbolTable* table, const char* name) {
@@ -208,8 +192,6 @@ void print_symbol_table(SymbolTable* table) {
     }
 }
 
-// ==================== UTILITY FUNCTIONS ====================
-
 void to_lower_case(char* str) {
     for (int i = 0; str[i]; i++) {
         str[i] = tolower(str[i]);
@@ -227,19 +209,16 @@ bool is_valid_single_char_operator(char c) {
 }
 
 bool is_valid_operator_combination(char current, char next) {
-    // Combinações válidas de operadores em MicroPascal
     if (current == ':' && next == '=') return true;    // :=
     if (current == '<' && next == '=') return true;    // <=
     if (current == '<' && next == '>') return true;    // <>
     if (current == '>' && next == '=') return true;    // >=
     
-    // Operadores de um único caractere são válidos
     if (is_valid_single_char_operator(current) && 
         !is_valid_operator_start(next)) {
         return true;
     }
     
-    // Combinações inválidas
     return false;
 }
 
@@ -247,7 +226,6 @@ void handle_unclosed_comment(Lexer* lexer, Token* token) {
     int start_line = lexer->line;
     int start_column = lexer->column;
     
-    // Avançar até encontrar } ou fim de arquivo
     while (lexer->current_char != EOF && lexer->current_char != '}') {
         if (lexer->current_char == '\n') {
             lexer->line++;
@@ -259,20 +237,17 @@ void handle_unclosed_comment(Lexer* lexer, Token* token) {
     }
     
     if (lexer->current_char == '}') {
-        // Comentário fechado eventualmente, mas com conteúdo
         token->type = TOK_ERROR;
         sprintf(token->lexeme, "Conteúdo entre { } não permitido (comentários não suportados)");
         lexer->current_char = fgetc(lexer->file);
         lexer->column++;
     } else {
-        // Comentário não fechado até o fim do arquivo
+
         token->type = TOK_ERROR;
         sprintf(token->lexeme, "Comentário não fechado iniciado na linha %d, coluna %d", 
                 start_line, start_column);
     }
 }
-
-// ==================== LEXER FUNCTIONS ====================
 
 Lexer* init_lexer(FILE* file) {
     Lexer* lexer = malloc(sizeof(Lexer));
@@ -322,26 +297,21 @@ Token get_next_token(Lexer* lexer) {
     token.column = lexer->column;
     token.lexeme[0] = '\0';
     
-    // Pular espaços em branco
     skip_whitespace(lexer);
     
-    // Fim de arquivo
     if (lexer->current_char == EOF) {
         token.type = TOK_EOF;
         strcpy(token.lexeme, "EOF");
         return token;
     }
     
-    // Identificadores e palavras reservadas
     if (isalpha(lexer->current_char)) {
         int i = 0;
-        
-        // Primeiro caractere deve ser letra
+
         token.lexeme[i++] = tolower(lexer->current_char);
         lexer->current_char = fgetc(lexer->file);
         lexer->column++;
         
-        // Caracteres subsequentes podem ser letras ou dígitos
         while ((isalnum(lexer->current_char) || lexer->current_char == '_') && i < MAX_LEXEME - 1) {
             token.lexeme[i++] = tolower(lexer->current_char);
             lexer->current_char = fgetc(lexer->file);
@@ -349,7 +319,6 @@ Token get_next_token(Lexer* lexer) {
         }
         token.lexeme[i] = '\0';
         
-        // Verificar se é palavra reservada
         if (strcmp(token.lexeme, "program") == 0) token.type = TOK_PROGRAM;
         else if (strcmp(token.lexeme, "var") == 0) token.type = TOK_VAR;
         else if (strcmp(token.lexeme, "integer") == 0) token.type = TOK_INTEGER;
@@ -369,7 +338,6 @@ Token get_next_token(Lexer* lexer) {
         return token;
     }
     
-    // Números (inteiros, reais e notação científica)
     if (isdigit(lexer->current_char) || 
         ((lexer->current_char == '+' || lexer->current_char == '-') && isdigit(peek_char(lexer)))) {
         
@@ -377,21 +345,18 @@ Token get_next_token(Lexer* lexer) {
         int is_real = 0;
         int has_exponent = 0;
         
-        // Verificar sinal (apenas se seguido por dígito)
         if (lexer->current_char == '+' || lexer->current_char == '-') {
             token.lexeme[i++] = lexer->current_char;
             lexer->current_char = fgetc(lexer->file);
             lexer->column++;
         }
         
-        // Parte inteira
         while (isdigit(lexer->current_char) && i < MAX_LEXEME - 1) {
             token.lexeme[i++] = lexer->current_char;
             lexer->current_char = fgetc(lexer->file);
             lexer->column++;
         }
         
-        // Parte decimal (opcional)
         if (lexer->current_char == '.') {
             is_real = 1;
             token.lexeme[i++] = lexer->current_char;
@@ -405,7 +370,6 @@ Token get_next_token(Lexer* lexer) {
             }
         }
         
-        // Expoente (opcional)
         if (lexer->current_char == 'E' || lexer->current_char == 'e') {
             is_real = 1;
             has_exponent = 1;
@@ -413,14 +377,12 @@ Token get_next_token(Lexer* lexer) {
             lexer->current_char = fgetc(lexer->file);
             lexer->column++;
             
-            // Sinal do expoente (opcional)
             if (lexer->current_char == '+' || lexer->current_char == '-') {
                 token.lexeme[i++] = lexer->current_char;
                 lexer->current_char = fgetc(lexer->file);
                 lexer->column++;
             }
             
-            // Dígitos do expoente
             while (isdigit(lexer->current_char) && i < MAX_LEXEME - 1) {
                 token.lexeme[i++] = lexer->current_char;
                 lexer->current_char = fgetc(lexer->file);
@@ -430,7 +392,6 @@ Token get_next_token(Lexer* lexer) {
         
         token.lexeme[i] = '\0';
         
-        // Determinar o tipo do token
         if (has_exponent) {
             token.type = LIT_REAL_EXP;
         } else if (is_real) {
@@ -442,16 +403,13 @@ Token get_next_token(Lexer* lexer) {
         return token;
     }
     
-    // Operadores e símbolos - COM VERIFICAÇÃO DE ERROS
     char next_char = peek_char(lexer);
     
-    // Verificar se é um operador válido (exceto : e . que são tratados separadamente)
     if (is_valid_operator_start(lexer->current_char) && lexer->current_char != ':' && lexer->current_char != '.') {
         if (!is_valid_operator_combination(lexer->current_char, next_char)) {
             token.type = TOK_ERROR;
             if (is_valid_operator_start(next_char)) {
                 sprintf(token.lexeme, "Operador inválido: '%c%c'", lexer->current_char, next_char);
-                // Consumir ambos os caracteres
                 lexer->current_char = fgetc(lexer->file);
                 lexer->column++;
             } else {
@@ -470,14 +428,12 @@ Token get_next_token(Lexer* lexer) {
             lexer->column++;
             
             if (lexer->current_char == '=') {
-                // Caso de atribuição :=
                 token.lexeme[1] = '=';
                 token.lexeme[2] = '\0';
                 token.type = OP_ASS;
                 lexer->current_char = fgetc(lexer->file);
                 lexer->column++;
             } else {
-                // Caso de ':' isolado (declaração de variáveis)
                 token.lexeme[1] = '\0';
                 token.type = SMB_COLON;
             }
@@ -491,10 +447,9 @@ Token get_next_token(Lexer* lexer) {
             lexer->column++;
             break;
             
-        case '"': // Strings não são suportadas em MicroPascal
+        case '"': 
             token.type = TOK_ERROR;
             strcpy(token.lexeme, "Strings não são suportadas em MicroPascal");
-            // Avançar até encontrar outra aspas ou fim de linha
             while (lexer->current_char != EOF && lexer->current_char != '"' && lexer->current_char != '\n') {
                 lexer->current_char = fgetc(lexer->file);
                 lexer->column++;
@@ -508,7 +463,6 @@ Token get_next_token(Lexer* lexer) {
             break;
             
         case '{':
-            // Verificar se há conteúdo entre { } (não permitido em MicroPascal)
             if (peek_char(lexer) != '}') {
                 handle_unclosed_comment(lexer, &token);
                 return token;
@@ -646,15 +600,13 @@ Token get_next_token(Lexer* lexer) {
             int start_column = lexer->column;
             int i = 0;
 
-            token.lexeme[i++] = '\''; // adiciona a aspa inicial
+            token.lexeme[i++] = '\''; 
 
-            // Pular a primeira aspa
             lexer->current_char = fgetc(lexer->file);
             lexer->column++;
 
-            // Ler caracteres até encontrar a aspa final ou EOF / \n
             while (lexer->current_char != '\'' && lexer->current_char != EOF && lexer->current_char != '\n') {
-                if (i >= MAX_LEXEME - 2) { // -2 para deixar espaço para a aspa final + '\0'
+                if (i >= MAX_LEXEME - 2) { 
                     token.type = TOK_ERROR;
                     sprintf(token.lexeme, "String muito longa na linha %d, coluna %d", start_line, start_column);
                     return token;
@@ -664,22 +616,20 @@ Token get_next_token(Lexer* lexer) {
                 lexer->column++;
             }
 
-            // Verificar fechamento correto
             if (lexer->current_char == '\'') {
-                token.lexeme[i++] = '\''; // adiciona a aspa final
-                token.lexeme[i] = '\0';  // fecha string
+                token.lexeme[i++] = '\''; 
+                token.lexeme[i] = '\0';
                 token.type = TOK_STRING;
-                lexer->current_char = fgetc(lexer->file); // avança após a aspa final
+                lexer->current_char = fgetc(lexer->file); 
                 lexer->column++;
             } else {
                 token.lexeme[i] = '\0';
                 token.type = TOK_ERROR;
                 sprintf(token.lexeme, "String não fechada na linha %d, coluna %d", start_line, start_column);
+                }
             }
-        } break;
-
-
-            
+            break;
+     
         default:
             token.type = TOK_ERROR;
             sprintf(token.lexeme, "Caractere desconhecido: '%c'", lexer->current_char);
@@ -687,11 +637,10 @@ Token get_next_token(Lexer* lexer) {
             lexer->column++;
             break;
     }
-    
     return token;
 }
 
-// ==================== MAIN FUNCTION ====================
+// MAIN
 
 int main(int argc, char* argv[]) {
     if (argc != 2) {
@@ -705,10 +654,8 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     
-    // Inicializar lexer
     Lexer* lexer = init_lexer(file);
     
-    // Criar arquivo de saída
     char output_filename[100];
     snprintf(output_filename, sizeof(output_filename), "%s.lex", argv[1]);
     FILE* output_file = fopen(output_filename, "w");
@@ -726,8 +673,7 @@ int main(int argc, char* argv[]) {
     printf("=== TOKENS RECONHECIDOS ===\n");
     printf("%-15s %-20s %-8s %-8s\n", "TOKEN", "LEXEMA", "LINHA", "COLUNA");
     printf("------------------------------------------------\n");
-    
-    // Processar tokens
+
     Token token;
     int has_errors = 0;
     
@@ -751,7 +697,6 @@ int main(int argc, char* argv[]) {
         
     } while (token.type != TOK_EOF);
     
-    // Mostrar tabela de símbolos
     print_symbol_table(&lexer->symbol_table);
     
     fclose(output_file);
