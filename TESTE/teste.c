@@ -1,3 +1,7 @@
+// gcc teste.c -o analisadorlexico
+// .\analisadorlexico.exe teste.arquivocerto
+// .\analisadorlexico.exe teste.arquivoerrado
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -176,7 +180,7 @@ Symbol* find_symbol(SymbolTable* table, const char* name) {
 void print_symbol_table(SymbolTable* table) {
     printf("\n=== TABELA DE SÍMBOLOS ===\n");
     printf("%-20s %-15s\n", "Nome", "Tipo");
-    printf("--------------------------------\n");
+    printf("----------------------------\n");
     
     for (int i = 0; i < table->count; i++) {
         printf("%-20s ", table->symbols[i].name);
@@ -637,13 +641,13 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     
-    fprintf(output_file, "=== TOKENS RECONHECIDOS ===\n");
-    fprintf(output_file, "%-15s %-20s %-8s %-8s\n", "TOKEN", "LEXEMA", "LINHA", "COLUNA");
-    fprintf(output_file, "------------------------------------------------\n");
+    fprintf(output_file, "\t\t\t=== TOKENS RECONHECIDOS ===\n");
+    fprintf(output_file, "%-15s %-18s %-8s %-8s\n", "TOKEN", "LEXEMA", "LINHA", "COLUNA");
+    fprintf(output_file, "--------------------------------------------------\n");
     
-    printf("=== TOKENS RECONHECIDOS ===\n");
-    printf("%-15s %-20s %-8s %-8s\n", "TOKEN", "LEXEMA", "LINHA", "COLUNA");
-    printf("------------------------------------------------\n");
+    printf("\t   === TOKENS RECONHECIDOS ===\n");
+    printf("%-15s %-18s %-8s %-8s\n", "TOKEN", "LEXEMA", "LINHA", "COLUNA");
+    printf("--------------------------------------------------\n");
     
     // Processar tokens
     Token token;

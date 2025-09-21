@@ -1,0 +1,26 @@
+			=== TOKENS RECONHECIDOS ===
+TOKEN           LEXEMA             LINHA    COLUNA  
+--------------------------------------------------
+PROGRAM         program              1        1       
+ID              exemplo1             1        8       
+SMB_SEM         ;                    1        17      
+VAR             var                  1        18      
+ID              x                    2        4       
+SMB_COM         ,                    2        6       
+ID              y                    2        7       
+SMB_COLON       :                    2        9       
+INTEGER         integer              2        10      
+SMB_SEM         ;                    2        18      
+BEGIN           begin                2        19      
+ID              x                    3        6       
+OP_ASS          :=                   4        4       
+LIT_INT         10                   4        7       
+SMB_SEM         ;                    4        10      
+ID              y                    4        11      
+OP_ASS          :=                   5        4       
+ID              x                    5        7       
+OP_AD           +                    5        9       
+LIT_INT         5                    5        11      
+SMB_SEM         ;                    5        13      
+END             end                  5        14      
+SMB_DOT         .                    6        4       
