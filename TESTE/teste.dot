@@ -43,3 +43,97 @@ digraph MicroPascalAFD {
     // Símbolos
     q0 -> qsmb [label="{ } ( ) ; ,"];
 }
+
+
+//
+
+
+digraph MicroPascal_SimplifiedAFD {
+    rankdir=LR;
+    node [shape=circle];
+
+    // Estados
+    q0 [label="q0", shape=doublecircle, style="filled", fillcolor="lightblue"];
+    q_id_prefix [label="ID", shape=doublecircle, style="filled", fillcolor="lightgreen"];
+    q_num_int [label="INT", shape=doublecircle, style="filled", fillcolor="lightyellow"];
+    q_num_real [label="REAL", shape=doublecircle, style="filled", fillcolor="lightyellow"];
+    q_op [label="OP", shape=doublecircle, style="filled", fillcolor="salmon"];
+    q_smb [label="SMB", shape=doublecircle, style="filled", fillcolor="gray"];
+
+    // Estados Intermediários
+    q_dot [label="q_dot"];
+    q_assign [label="q_assign"];
+    q_lt [label="q_lt"];
+    q_gt [label="q_gt"];
+
+    // Estados para Palavras-chave específicas (ex: program, if)
+    subgraph cluster_keywords {
+        label = "Palavras-Chave (KW)";
+        style=filled;
+        color=lightgrey;
+        node [shape=circle, style="filled", fillcolor="lightgreen"];
+        
+        q_p [label="p"];
+        q_pro [label="pr"];
+        q_prog [label="pro"];
+        q_progr [label="prog"];
+        q_progra [label="progr"];
+        q_program [label="progra"];
+        
+        q_if [label="i"];
+        q_if_final [label="if", shape=doublecircle, style="filled", fillcolor="lightgreen"];
+        
+        q_begin_b [label="b"];
+        q_begin_be [label="be"];
+        q_begin_beg [label="beg"];
+        q_begin_begi [label="begi"];
+        q_begin_begin [label="begin", shape=doublecircle, style="filled", fillcolor="lightgreen"];
+    }
+
+    // Identificadores e Palavras-chave
+    q0 -> q_id_prefix [label="outras letras (a-z)"];
+    q_id_prefix -> q_id_prefix [label="a-z, 0-9"];
+
+    // Transições de q0 para Palavras-chave
+    q0 -> q_if [label="i"];
+    q_if -> q_if_final [label="f"];
+    q_if_final -> q_id_prefix [label="a-z, 0-9"];
+    
+    q0 -> q_p [label="p"];
+    q_p -> q_pro [label="r"];
+    q_pro -> q_prog [label="o"];
+    q_prog -> q_progr [label="g"];
+    q_progr -> q_progra [label="r"];
+    q_progra -> q_program [label="a"];
+    q_program -> q_id_prefix [label="m"]; // O "m" completa a palavra, mas precisa de um estado final
+
+    // O mesmo padrão se aplica a todas as palavras-chave
+    // Ex: begin
+    q0 -> q_begin_b [label="b"];
+    q_begin_b -> q_begin_be [label="e"];
+    q_begin_be -> q_begin_beg [label="g"];
+    q_begin_beg -> q_begin_begi [label="i"];
+    q_begin_begi -> q_begin_begin [label="n"];
+    q_begin_begin -> q_id_prefix [label="a-z, 0-9"];
+    
+    // Números
+    q0 -> q_num_int [label="0-9"];
+    q_num_int -> q_num_int [label="0-9"];
+    q_num_int -> q_dot [label="."];
+    q_dot -> q_num_real [label="0-9"];
+    q_num_real -> q_num_real [label="0-9"];
+
+    // Operadores
+    q0 -> q_op [label="+, -, *, /"];
+    q0 -> q_assign [label=":"];
+    q_assign -> q_op [label="="];
+    q0 -> q_lt [label="<"];
+    q_lt -> q_op [label="="];
+    q_lt -> q_op [label=">"];
+    q0 -> q_gt [label=">"];
+    q_gt -> q_op [label="="];
+    q_op -> q_op [label=" "];
+
+    // Símbolos
+    q0 -> q_smb [label=";, (, ), {, }"];
+}
