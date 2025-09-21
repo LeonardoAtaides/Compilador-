@@ -682,12 +682,12 @@ int main(int argc, char* argv[]) {
         
         if (token.type == TOK_ERROR) {
             has_errors = 1;
-            printf("ERRO (Linha %d, Coluna %d): %s\n", 
+            printf("\033[1;31mERRO\033[0m (Linha %d, Coluna %d): %s\n", 
                    token.line, token.column, token.lexeme);
             fprintf(output_file, "ERRO (Linha %d, Coluna %d): %s\n", 
                     token.line, token.column, token.lexeme);
         } else if (token.type != TOK_EOF) {
-            printf("%-15s %-20s %-8d %-8d\n", 
+            printf("\033[1;33m%-15s\033[0m %-20s %-8d %-8d\n", 
                    token_type_to_string(token.type), token.lexeme, 
                    token.line, token.column);
             fprintf(output_file, "%-15s %-20s %-8d %-8d\n", 
