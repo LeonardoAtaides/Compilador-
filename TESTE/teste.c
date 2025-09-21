@@ -20,6 +20,7 @@ typedef enum {
     
     // Símbolos
     SMB_OBC, SMB_COM, SMB_CBC, SMB_SEM, SMB_OPA, SMB_CPA,
+    SMB_COLON, SMB_DOT, // Novos símbolos adicionados
     
     // Identificadores e literais
     ID, LIT_INT, LIT_REAL, LIT_REAL_EXP,
@@ -111,6 +112,8 @@ const char* token_type_to_string(TokenType type) {
         case SMB_SEM: return "SMB_SEM";
         case SMB_OPA: return "SMB_OPA";
         case SMB_CPA: return "SMB_CPA";
+        case SMB_COLON: return "SMB_COLON"; // Novo
+        case SMB_DOT: return "SMB_DOT";     // Novo
         
         case ID: return "ID";
         case LIT_INT: return "LIT_INT";
@@ -405,8 +408,8 @@ Token get_next_token(Lexer* lexer) {
     // Operadores e símbolos - COM VERIFICAÇÃO DE ERROS
     char next_char = peek_char(lexer);
     
-    // Verificar se é um operador válido
-    if (is_valid_operator_start(lexer->current_char)) {
+    // Verificar se é um operador válido (exceto : e . que são tratados separadamente)
+    if (is_valid_operator_start(lexer->current_char) && lexer->current_char != ':' && lexer->current_char != '.') {
         if (!is_valid_operator_combination(lexer->current_char, next_char)) {
             token.type = TOK_ERROR;
             if (is_valid_operator_start(next_char)) {
@@ -430,16 +433,25 @@ Token get_next_token(Lexer* lexer) {
             lexer->column++;
             
             if (lexer->current_char == '=') {
+                // Caso de atribuição :=
                 token.lexeme[1] = '=';
                 token.lexeme[2] = '\0';
                 token.type = OP_ASS;
                 lexer->current_char = fgetc(lexer->file);
                 lexer->column++;
             } else {
+                // Caso de ':' isolado (declaração de variáveis)
                 token.lexeme[1] = '\0';
-                token.type = TOK_ERROR;
-                strcpy(token.lexeme, "Caractere ':' isolado");
+                token.type = SMB_COLON;
             }
+            break;
+            
+        case '.':
+            token.lexeme[0] = lexer->current_char;
+            token.lexeme[1] = '\0';
+            token.type = SMB_DOT;
+            lexer->current_char = fgetc(lexer->file);
+            lexer->column++;
             break;
             
         case '<':
