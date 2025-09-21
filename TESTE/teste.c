@@ -174,19 +174,19 @@ void print_symbol_table(SymbolTable* table) {
         printf("%-20s ", table->symbols[i].name);
         
         switch (table->symbols[i].type) {
-            case TOK_PROGRAM: printf("%-15s", "PROGRAM"); break;
-            case TOK_VAR: printf("%-15s", "VAR"); break;
-            case TOK_INTEGER: printf("%-15s", "INTEGER"); break;
-            case TOK_REAL: printf("%-15s", "REAL"); break;
-            case TOK_BEGIN: printf("%-15s", "BEGIN"); break;
-            case TOK_END: printf("%-15s", "END"); break;
-            case TOK_IF: printf("%-15s", "IF"); break;
-            case TOK_THEN: printf("%-15s", "THEN"); break;
-            case TOK_ELSE: printf("%-15s", "ELSE"); break;
-            case TOK_WHILE: printf("%-15s", "WHILE"); break;
-            case TOK_DO: printf("%-15s", "DO"); break;
-            case ID: printf("%-15s", "ID"); break;
-            default: printf("%-15s", "UNKNOWN"); break;
+            case TOK_PROGRAM: printf("\033[1;33m%-15s\033[0m", "PROGRAM"); break;
+            case TOK_VAR: printf("\033[1;33m%-15s\033[0m", "VAR"); break;
+            case TOK_INTEGER: printf("\033[1;33m%-15s\033[0m", "INTEGER"); break;
+            case TOK_REAL: printf("\033[1;33m%-15s\033[0m", "REAL"); break;
+            case TOK_BEGIN: printf("\033[1;33m%-15s\033[0m", "BEGIN"); break;
+            case TOK_END: printf("\033[1;33m%-15s\033[0m", "END"); break;
+            case TOK_IF: printf("\033[1;33m%-15s\033[0m", "IF"); break;
+            case TOK_THEN: printf("\033[1;33m%-15s\033[0m", "THEN"); break;
+            case TOK_ELSE: printf("\033[1;33m%-15s\033[0m", "ELSE"); break;
+            case TOK_WHILE: printf("\033[1;33m%-15s\033[0m", "WHILE"); break;
+            case TOK_DO: printf("\033[1;33m%-15s\033[0m", "DO"); break;
+            case ID: printf("\033[1;33m%-15s\033[0m", "ID"); break;
+            default: printf("\033[1;33m%-15s\033[0m", "UNKNOWN"); break;
         }
         printf("\n");
     }
