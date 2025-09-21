@@ -283,6 +283,8 @@ void skip_whitespace(Lexer* lexer) {
     }
 }
 
+// ==================== LEXER FUNCTIONS ====================
+
 Token get_next_token(Lexer* lexer) {
     Token token;
     token.line = lexer->line;
@@ -298,43 +300,71 @@ Token get_next_token(Lexer* lexer) {
         strcpy(token.lexeme, "EOF");
         return token;
     }
-    
-    // Identificadores e palavras reservadas
-    if (isalpha(lexer->current_char)) {
+
+    // ================= STRINGS =================
+    if (lexer->current_char == '\'') {
         int i = 0;
-        
-        // Primeiro caractere deve ser letra
-        token.lexeme[i++] = tolower(lexer->current_char);
+        token.lexeme[i++] = lexer->current_char;
         lexer->current_char = fgetc(lexer->file);
         lexer->column++;
-        
-        // Caracteres subsequentes podem ser letras ou dígitos
-        while ((isalnum(lexer->current_char) || lexer->current_char == '_') && i < MAX_LEXEME - 1) {
-            token.lexeme[i++] = tolower(lexer->current_char);
+
+        while (lexer->current_char != '\'' && lexer->current_char != EOF && lexer->current_char != '\n' && i < MAX_LEXEME - 1) {
+            token.lexeme[i++] = lexer->current_char;
             lexer->current_char = fgetc(lexer->file);
             lexer->column++;
         }
-        token.lexeme[i] = '\0';
-        
-        // Verificar se é palavra reservada
-        if (strcmp(token.lexeme, "program") == 0) token.type = TOK_PROGRAM;
-        else if (strcmp(token.lexeme, "var") == 0) token.type = TOK_VAR;
-        else if (strcmp(token.lexeme, "integer") == 0) token.type = TOK_INTEGER;
-        else if (strcmp(token.lexeme, "real") == 0) token.type = TOK_REAL;
-        else if (strcmp(token.lexeme, "begin") == 0) token.type = TOK_BEGIN;
-        else if (strcmp(token.lexeme, "end") == 0) token.type = TOK_END;
-        else if (strcmp(token.lexeme, "if") == 0) token.type = TOK_IF;
-        else if (strcmp(token.lexeme, "then") == 0) token.type = TOK_THEN;
-        else if (strcmp(token.lexeme, "else") == 0) token.type = TOK_ELSE;
-        else if (strcmp(token.lexeme, "while") == 0) token.type = TOK_WHILE;
-        else if (strcmp(token.lexeme, "do") == 0) token.type = TOK_DO;
-        else {
-            token.type = ID;
-            insert_symbol(&lexer->symbol_table, token.lexeme, ID);
+
+        if (lexer->current_char == '\'') {
+            token.lexeme[i++] = '\'';
+            token.lexeme[i] = '\0';
+            lexer->current_char = fgetc(lexer->file);
+            lexer->column++;
+            token.type = ID; // Se quiser, pode criar um tipo TOK_STRING
         }
-        
+        else if (lexer->current_char == '\n') {
+            token.type = TOK_ERROR;
+            strcpy(token.lexeme, "String não fechada antes da quebra de linha");
+        }
+        else if (lexer->current_char == EOF) {
+            token.type = TOK_ERROR;
+            strcpy(token.lexeme, "String não fechada antes do fim do arquivo");
+        }
         return token;
     }
+
+    // ================= COMENTÁRIOS =================
+    if (lexer->current_char == '{') {
+        int start_line = lexer->line;
+        int start_col = lexer->column;
+
+        lexer->current_char = fgetc(lexer->file);
+        lexer->column++;
+
+        while (lexer->current_char != '}' && lexer->current_char != EOF) {
+            if (lexer->current_char == '\n') {
+                lexer->line++;
+                lexer->column = 1;
+            }
+            else {
+                lexer->column++;
+            }
+            lexer->current_char = fgetc(lexer->file);
+        }
+
+        if (lexer->current_char == EOF) {
+            token.type = TOK_ERROR;
+            sprintf(token.lexeme, "Comentário não-fechado iniciado em linha %d, coluna %d", start_line, start_col);
+            return token;
+        }
+
+        // Se achou o '}', mas MicroPascal não aceita comentários → ERRO
+        token.type = TOK_ERROR;
+        strcpy(token.lexeme, "Comentários não são permitidos em MicroPascal");
+        lexer->current_char = fgetc(lexer->file);
+        lexer->column++;
+        return token;
+    }
+
     
     // Números (inteiros, reais e notação científica)
     if (isdigit(lexer->current_char) || 
