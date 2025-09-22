@@ -1,122 +1,96 @@
-// cd Trabalho -> gcc analisadorlexico.c -o analisadorlexico
+// gcc teste.c -o analisadorlexico
 // .\analisadorlexico.exe teste.arquivocerto
+// .\analisadorlexico.exe teste.arquivoerrado
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <stdbool.h>
 
-#define MAX_LEXEMA 100
-#define TS_SIZE 1000
+#define MAX_SYMBOLS 100
+#define MAX_LEXEME 100
 
 typedef enum {
-    // Identificadores e literais
-    TK_IDENTIFIER,
-    TK_KEYWORD,
-    TK_INTEGER,
-    TK_REAL,
+    // Palavras reservadas
+    TOK_PROGRAM, TOK_VAR, TOK_INTEGER, TOK_REAL, TOK_BEGIN, TOK_END,
+    TOK_IF, TOK_THEN, TOK_ELSE, TOK_WHILE, TOK_DO,
     
     // Operadores
-    OP_EQ,      // =
-    OP_GE,      // >=
-    OP_MUL,     // *
-    OP_NE,      // <>
-    OP_LE,      // <=
-    OP_DIV,     // /
-    OP_GT,      // >
-    OP_AD,      // +
-    OP_ASS,     // :=
-    OP_LT,      // <
-    OP_MIN,     // -
+    OP_EQ, OP_GE, OP_MUL, OP_NE, OP_LE, OP_DIV, OP_GT, OP_AD, 
+    OP_ASS, OP_LT, OP_MIN,
     
     // Símbolos
-    SMB_OBC,    // {
-    SMB_COM,    // ,
-    SMB_CBC,    // }
-    SMB_SEM,    // ;
-    SMB_OPA,    // (
-    SMB_CPA,    // )
-    SMB_DOT,    // .
-    SMB_COL,    // :
+    SMB_OBC, SMB_COM, SMB_CBC, SMB_SEM, SMB_OPA, SMB_CPA,
+    SMB_COLON, SMB_DOT,
     
-    TK_UNKNOWN
+    // Identificadores e
+    ID, LIT_INT, LIT_REAL, LIT_REAL_EXP,TOK_STRING,
+    
+    // Fim de arquivo e erro
+    TOK_EOF, TOK_ERROR
 } TokenType;
 
 typedef struct {
+    char name[MAX_LEXEME];
     TokenType type;
-    char lexeme[MAX_LEXEMA];
+} Symbol;
+
+typedef struct {
+    Symbol symbols[MAX_SYMBOLS];
+    int count;
+} SymbolTable;
+
+typedef struct {
+    TokenType type;
+    char lexeme[MAX_LEXEME];
     int line;
     int column;
 } Token;
 
 typedef struct {
-    char lexeme[MAX_LEXEMA];
-    TokenType type;
-} Symbol;
+    FILE* file;
+    char current_char;
+    int line;
+    int column;
+    SymbolTable symbol_table;
+} Lexer;
 
-Symbol symbolTable[TS_SIZE];
-int symbolCount = 0;
+// FUNÇÕES
 
-// Lista de palavras-chave
-const char* keywords[] = {
-    "program", "var", "integer", "real", "begin", "end", 
-    "if", "then", "else", "while", "do"
-};
-const int keywordCount = 11;
+const char* token_type_to_string(TokenType type);
 
-// Funções auxiliares
-void toLowerCase(char* str) {
-    for(int i = 0; str[i]; i++) {
-        str[i] = tolower(str[i]);
-    }
-}
+void init_symbol_table(SymbolTable* table);
+int insert_symbol(SymbolTable* table, const char* name, TokenType type);
+Symbol* find_symbol(SymbolTable* table, const char* name);
+void print_symbol_table(SymbolTable* table);
 
-int isKeyword(char* lexeme) {
-    char temp[MAX_LEXEMA];
-    strcpy(temp, lexeme);
-    toLowerCase(temp);
-    
-    for(int i = 0; i < keywordCount; i++) {
-        if(strcmp(temp, keywords[i]) == 0) {
-            return 1;
-        }
-    }
-    return 0;
-}
+Lexer* init_lexer(FILE* file);
+void free_lexer(Lexer* lexer);
+Token get_next_token(Lexer* lexer);
+void skip_whitespace(Lexer* lexer);
+char peek_char(Lexer* lexer);
+bool is_valid_operator_combination(char current, char next);
+bool is_valid_single_char_operator(char c);
+bool is_valid_operator_start(char c);
+void handle_unclosed_comment(Lexer* lexer, Token* token);
 
-void initializeSymbolTable() {
-    // Adiciona palavras reservadas à tabela de símbolos
-    for(int i = 0; i < keywordCount; i++) {
-        strcpy(symbolTable[symbolCount].lexeme, keywords[i]);
-        symbolTable[symbolCount].type = TK_KEYWORD;
-        symbolCount++;
-    }
-}
+void to_lower_case(char* str);
 
-void addSymbol(char* lexeme, TokenType type) {
-    // Verifica se já existe na tabela
-    for(int i = 0; i < symbolCount; i++) {
-        if(strcmp(symbolTable[i].lexeme, lexeme) == 0) {
-            return;
-        }
-    }
-    
-    // Adiciona se não existir
-    if(symbolCount < TS_SIZE) {
-        strcpy(symbolTable[symbolCount].lexeme, lexeme);
-        symbolTable[symbolCount].type = type;
-        symbolCount++;
-    }
-}
-
-const char* getTokenTypeName(TokenType type) {
-    switch(type) {
-        case TK_IDENTIFIER: return "IDENTIFIER";
-        case TK_KEYWORD: return "KEYWORD";
-        case TK_INTEGER: return "INTEGER";
-        case TK_REAL: return "REAL";
+const char* token_type_to_string(TokenType type) {
+    switch (type) {
+        case TOK_PROGRAM: return "PROGRAM";
+        case TOK_VAR: return "VAR";
+        case TOK_INTEGER: return "INTEGER";
+        case TOK_REAL: return "REAL";
+        case TOK_BEGIN: return "BEGIN";
+        case TOK_END: return "END";
+        case TOK_IF: return "IF";
+        case TOK_THEN: return "THEN";
+        case TOK_ELSE: return "ELSE";
+        case TOK_WHILE: return "WHILE";
+        case TOK_DO: return "DO";
         
-        // Operadores
         case OP_EQ: return "OP_EQ";
         case OP_GE: return "OP_GE";
         case OP_MUL: return "OP_MUL";
@@ -129,280 +103,611 @@ const char* getTokenTypeName(TokenType type) {
         case OP_LT: return "OP_LT";
         case OP_MIN: return "OP_MIN";
         
-        // Símbolos
         case SMB_OBC: return "SMB_OBC";
         case SMB_COM: return "SMB_COM";
         case SMB_CBC: return "SMB_CBC";
         case SMB_SEM: return "SMB_SEM";
         case SMB_OPA: return "SMB_OPA";
         case SMB_CPA: return "SMB_CPA";
+        case SMB_COLON: return "SMB_COLON";
         case SMB_DOT: return "SMB_DOT";
-        case SMB_COL: return "SMB_COL";
         
+        case ID: return "ID";
+        case LIT_INT: return "LIT_INT";
+        case LIT_REAL: return "LIT_REAL";
+        case LIT_REAL_EXP: return "LIT_REAL_EXP";
+        
+        case TOK_EOF: return "EOF";
+        case TOK_ERROR: return "ERROR";
+        case TOK_STRING: return "STRING";
+
         default: return "UNKNOWN";
     }
 }
 
-void writeToken(FILE* fp, Token token) {
-    fprintf(fp, "<%s, %s> Line: %d, Column: %d\n", 
-            getTokenTypeName(token.type), token.lexeme, token.line, token.column);
+void init_symbol_table(SymbolTable* table) {
+    table->count = 0;
+    insert_symbol(table, "program", TOK_PROGRAM);
+    insert_symbol(table, "var", TOK_VAR);
+    insert_symbol(table, "integer", TOK_INTEGER);
+    insert_symbol(table, "real", TOK_REAL);
+    insert_symbol(table, "begin", TOK_BEGIN);
+    insert_symbol(table, "end", TOK_END);
+    insert_symbol(table, "if", TOK_IF);
+    insert_symbol(table, "then", TOK_THEN);
+    insert_symbol(table, "else", TOK_ELSE);
+    insert_symbol(table, "while", TOK_WHILE);
+    insert_symbol(table, "do", TOK_DO);
 }
 
-// Analisa identificador ou palavra-chave
-Token analyzeIdentifier(FILE* fp, int startLine, int startCol, int firstChar) {
-    Token token;
-    int c, len = 0;
-    char lexeme[MAX_LEXEMA];
-    
-    lexeme[len++] = firstChar;
-    
-    while((c = fgetc(fp)) != EOF && (isalnum(c) || c == '_')) {
-        if(len < MAX_LEXEMA - 1) {
-            lexeme[len++] = c;
+int insert_symbol(SymbolTable* table, const char* name, TokenType type) {
+    for (int i = 0; i < table->count; i++) {
+        if (strcmp(table->symbols[i].name, name) == 0) {
+            return 0;
         }
     }
     
-    if(c != EOF) {
-        fseek(fp, -1, SEEK_CUR);
+    if (table->count < MAX_SYMBOLS) {
+        strcpy(table->symbols[table->count].name, name);
+        table->symbols[table->count].type = type;
+        table->count++;
+        return 1;
+    }  
+    return -1; 
+}
+
+Symbol* find_symbol(SymbolTable* table, const char* name) {
+    for (int i = 0; i < table->count; i++) {
+        if (strcmp(table->symbols[i].name, name) == 0) {
+            return &table->symbols[i];
+        }
+    }
+    return NULL;
+}
+
+void print_symbol_table(SymbolTable* table) {
+    printf("\n=== TABELA DE SÍMBOLOS ===\n");
+    printf("%-20s %-15s\n", "Nome", "Tipo");
+    printf("--------------------------------\n");
+    
+    for (int i = 0; i < table->count; i++) {
+        printf("%-20s ", table->symbols[i].name);
+        
+        switch (table->symbols[i].type) {
+            case TOK_PROGRAM: printf("\033[1;33m%-15s\033[0m", "PROGRAM"); break;
+            case TOK_VAR: printf("\033[1;33m%-15s\033[0m", "VAR"); break;
+            case TOK_INTEGER: printf("\033[1;33m%-15s\033[0m", "INTEGER"); break;
+            case TOK_REAL: printf("\033[1;33m%-15s\033[0m", "REAL"); break;
+            case TOK_BEGIN: printf("\033[1;33m%-15s\033[0m", "BEGIN"); break;
+            case TOK_END: printf("\033[1;33m%-15s\033[0m", "END"); break;
+            case TOK_IF: printf("\033[1;33m%-15s\033[0m", "IF"); break;
+            case TOK_THEN: printf("\033[1;33m%-15s\033[0m", "THEN"); break;
+            case TOK_ELSE: printf("\033[1;33m%-15s\033[0m", "ELSE"); break;
+            case TOK_WHILE: printf("\033[1;33m%-15s\033[0m", "WHILE"); break;
+            case TOK_DO: printf("\033[1;33m%-15s\033[0m", "DO"); break;
+            case ID: printf("\033[1;33m%-15s\033[0m", "ID"); break;
+            default: printf("\033[1;33m%-15s\033[0m", "UNKNOWN"); break;
+        }
+        printf("\n");
+    }
+}
+
+void to_lower_case(char* str) {
+    for (int i = 0; str[i]; i++) {
+        str[i] = tolower(str[i]);
+    }
+}
+
+bool is_valid_operator_start(char c) {
+    return c == ':' || c == '<' || c == '>' || c == '=' || 
+           c == '+' || c == '-' || c == '*' || c == '/';
+}
+
+bool is_valid_single_char_operator(char c) {
+    return c == '=' || c == '+' || c == '-' || c == '*' || 
+           c == '/' || c == '<' || c == '>';
+}
+
+bool is_valid_operator_combination(char current, char next) {
+    if (current == ':' && next == '=') return true;    // :=
+    if (current == '<' && next == '=') return true;    // <=
+    if (current == '<' && next == '>') return true;    // <>
+    if (current == '>' && next == '=') return true;    // >=
+    
+    if (is_valid_single_char_operator(current) && 
+        !is_valid_operator_start(next)) {
+        return true;
     }
     
-    lexeme[len] = '\0';
+    return false;
+}
+
+void handle_unclosed_comment(Lexer* lexer, Token* token) {
+    int start_line = lexer->line;
+    int start_column = lexer->column;
     
-    strcpy(token.lexeme, lexeme);
-    token.line = startLine;
-    token.column = startCol;
+    while (lexer->current_char != EOF && lexer->current_char != '}') {
+        if (lexer->current_char == '\n') {
+            lexer->line++;
+            lexer->column = 1;
+        } else {
+            lexer->column++;
+        }
+        lexer->current_char = fgetc(lexer->file);
+    }
     
-    if(isKeyword(lexeme)) {
-        token.type = TK_KEYWORD;
+    if (lexer->current_char == '}') {
+        token->type = TOK_ERROR;
+        sprintf(token->lexeme, "Conteúdo entre { } não permitido (comentários não suportados)");
+        lexer->current_char = fgetc(lexer->file);
+        lexer->column++;
     } else {
-        token.type = TK_IDENTIFIER;
-        addSymbol(lexeme, TK_IDENTIFIER);
+
+        token->type = TOK_ERROR;
+        sprintf(token->lexeme, "Comentário não fechado iniciado na linha %d, coluna %d", 
+                start_line, start_column);
     }
-    
-    return token;
 }
 
-// Analisa número (inteiro ou real)
-Token analyzeNumber(FILE* fp, int startLine, int startCol, int firstChar) {
+Lexer* init_lexer(FILE* file) {
+    Lexer* lexer = malloc(sizeof(Lexer));
+    lexer->file = file;
+    lexer->current_char = fgetc(file);
+    lexer->line = 1;
+    lexer->column = 1;
+    init_symbol_table(&lexer->symbol_table);
+    return lexer;
+}
+
+void free_lexer(Lexer* lexer) {
+    fclose(lexer->file);
+    free(lexer);
+}
+
+char peek_char(Lexer* lexer) {
+    if (feof(lexer->file)) return '\0';
+    
+    long current_pos = ftell(lexer->file);
+    char next_char = fgetc(lexer->file);
+    fseek(lexer->file, current_pos, SEEK_SET);
+    
+    return next_char;
+}
+
+void skip_whitespace(Lexer* lexer) {
+    while (lexer->current_char != EOF && 
+           (lexer->current_char == ' ' || 
+            lexer->current_char == '\t' || 
+            lexer->current_char == '\n')) {
+        
+        if (lexer->current_char == '\n') {
+            lexer->line++;
+            lexer->column = 1;
+        } else {
+            lexer->column++;
+        }
+        
+        lexer->current_char = fgetc(lexer->file);
+    }
+}
+
+Token get_next_token(Lexer* lexer) {
     Token token;
-    int c, len = 0;
-    char lexeme[MAX_LEXEMA];
-    int isReal = 0;
-    int hasExponent = 0;
+    token.line = lexer->line;
+    token.column = lexer->column;
+    token.lexeme[0] = '\0';
     
-    lexeme[len++] = firstChar;
+    skip_whitespace(lexer);
     
-    while((c = fgetc(fp)) != EOF) {
-        if(isdigit(c)) {
-            if(len < MAX_LEXEMA - 1) {
-                lexeme[len++] = c;
+    if (lexer->current_char == EOF) {
+        token.type = TOK_EOF;
+        strcpy(token.lexeme, "EOF");
+        return token;
+    }
+    
+    if (isalpha(lexer->current_char)) {
+        int i = 0;
+
+        token.lexeme[i++] = tolower(lexer->current_char);
+        lexer->current_char = fgetc(lexer->file);
+        lexer->column++;
+        
+        while ((isalnum(lexer->current_char) || lexer->current_char == '_') && i < MAX_LEXEME - 1) {
+            token.lexeme[i++] = tolower(lexer->current_char);
+            lexer->current_char = fgetc(lexer->file);
+            lexer->column++;
+        }
+        token.lexeme[i] = '\0';
+        
+        if (strcmp(token.lexeme, "program") == 0) token.type = TOK_PROGRAM;
+        else if (strcmp(token.lexeme, "var") == 0) token.type = TOK_VAR;
+        else if (strcmp(token.lexeme, "integer") == 0) token.type = TOK_INTEGER;
+        else if (strcmp(token.lexeme, "real") == 0) token.type = TOK_REAL;
+        else if (strcmp(token.lexeme, "begin") == 0) token.type = TOK_BEGIN;
+        else if (strcmp(token.lexeme, "end") == 0) token.type = TOK_END;
+        else if (strcmp(token.lexeme, "if") == 0) token.type = TOK_IF;
+        else if (strcmp(token.lexeme, "then") == 0) token.type = TOK_THEN;
+        else if (strcmp(token.lexeme, "else") == 0) token.type = TOK_ELSE;
+        else if (strcmp(token.lexeme, "while") == 0) token.type = TOK_WHILE;
+        else if (strcmp(token.lexeme, "do") == 0) token.type = TOK_DO;
+        else {
+            token.type = ID;
+            insert_symbol(&lexer->symbol_table, token.lexeme, ID);
+        }
+        
+        return token;
+    }
+    
+    if (isdigit(lexer->current_char) || 
+        ((lexer->current_char == '+' || lexer->current_char == '-') && isdigit(peek_char(lexer)))) {
+        
+        int i = 0;
+        int is_real = 0;
+        int has_exponent = 0;
+        
+        if (lexer->current_char == '+' || lexer->current_char == '-') {
+            token.lexeme[i++] = lexer->current_char;
+            lexer->current_char = fgetc(lexer->file);
+            lexer->column++;
+        }
+        
+        while (isdigit(lexer->current_char) && i < MAX_LEXEME - 1) {
+            token.lexeme[i++] = lexer->current_char;
+            lexer->current_char = fgetc(lexer->file);
+            lexer->column++;
+        }
+        
+        if (lexer->current_char == '.') {
+            is_real = 1;
+            token.lexeme[i++] = lexer->current_char;
+            lexer->current_char = fgetc(lexer->file);
+            lexer->column++;
+            
+            while (isdigit(lexer->current_char) && i < MAX_LEXEME - 1) {
+                token.lexeme[i++] = lexer->current_char;
+                lexer->current_char = fgetc(lexer->file);
+                lexer->column++;
             }
         }
-        else if(c == '.' && !isReal && !hasExponent) {
-            if(len < MAX_LEXEMA - 1) {
-                lexeme[len++] = c;
-                isReal = 1;
+        
+        if (lexer->current_char == 'E' || lexer->current_char == 'e') {
+            is_real = 1;
+            has_exponent = 1;
+            token.lexeme[i++] = 'E';
+            lexer->current_char = fgetc(lexer->file);
+            lexer->column++;
+            
+            if (lexer->current_char == '+' || lexer->current_char == '-') {
+                token.lexeme[i++] = lexer->current_char;
+                lexer->current_char = fgetc(lexer->file);
+                lexer->column++;
+            }
+            
+            while (isdigit(lexer->current_char) && i < MAX_LEXEME - 1) {
+                token.lexeme[i++] = lexer->current_char;
+                lexer->current_char = fgetc(lexer->file);
+                lexer->column++;
             }
         }
-        else if((c == 'E' || c == 'e') && !hasExponent) {
-            if(len < MAX_LEXEMA - 1) {
-                lexeme[len++] = c;
-                hasExponent = 1;
-                isReal = 1;
-                
-                // Verificar se há sinal no expoente
-                int next = fgetc(fp);
-                if(next == '+' || next == '-') {
-                    if(len < MAX_LEXEMA - 1) {
-                        lexeme[len++] = next;
-                    }
-                } else if(next != EOF) {
-                    fseek(fp, -1, SEEK_CUR);
+        
+        token.lexeme[i] = '\0';
+        
+        if (has_exponent) {
+            token.type = LIT_REAL_EXP;
+        } else if (is_real) {
+            token.type = LIT_REAL;
+        } else {
+            token.type = LIT_INT;
+        }
+        
+        return token;
+    }
+    
+    char next_char = peek_char(lexer);
+    
+    if (is_valid_operator_start(lexer->current_char) && lexer->current_char != ':' && lexer->current_char != '.') {
+        if (!is_valid_operator_combination(lexer->current_char, next_char)) {
+            token.type = TOK_ERROR;
+            if (is_valid_operator_start(next_char)) {
+                sprintf(token.lexeme, "Operador inválido: '%c%c'", lexer->current_char, next_char);
+                lexer->current_char = fgetc(lexer->file);
+                lexer->column++;
+            } else {
+                sprintf(token.lexeme, "Operador inválido: '%c'", lexer->current_char);
+            }
+            lexer->current_char = fgetc(lexer->file);
+            lexer->column++;
+            return token;
+        }
+    }
+    
+    switch (lexer->current_char) {
+        case ':':
+            token.lexeme[0] = lexer->current_char;
+            lexer->current_char = fgetc(lexer->file);
+            lexer->column++;
+            
+            if (lexer->current_char == '=') {
+                token.lexeme[1] = '=';
+                token.lexeme[2] = '\0';
+                token.type = OP_ASS;
+                lexer->current_char = fgetc(lexer->file);
+                lexer->column++;
+            } else {
+                token.lexeme[1] = '\0';
+                token.type = SMB_COLON;
+            }
+            break;
+            
+        case '.':
+            token.lexeme[0] = lexer->current_char;
+            token.lexeme[1] = '\0';
+            token.type = SMB_DOT;
+            lexer->current_char = fgetc(lexer->file);
+            lexer->column++;
+            break;
+            
+        case '"': 
+            token.type = TOK_ERROR;
+            strcpy(token.lexeme, " O caracter \" não é permitido");
+            while (lexer->current_char != EOF && lexer->current_char != '"' && lexer->current_char != '\n') {
+                lexer->current_char = fgetc(lexer->file);
+                lexer->column++;
+            }
+            if (lexer->current_char == '\n') {
+                sprintf(token.lexeme, "String não fechada antes da quebra de linha");
+            } else if (lexer->current_char == '"') {
+                lexer->current_char = fgetc(lexer->file);
+                lexer->column++;
+            }
+            break;
+            
+        case '{':
+            if (peek_char(lexer) != '}') {
+                handle_unclosed_comment(lexer, &token);
+                return token;
+            }
+            
+            token.lexeme[0] = lexer->current_char;
+            token.lexeme[1] = '\0';
+            token.type = SMB_OBC;
+            lexer->current_char = fgetc(lexer->file);
+            lexer->column++;
+            break;
+            
+        case '<':
+            token.lexeme[0] = lexer->current_char;
+            lexer->current_char = fgetc(lexer->file);
+            lexer->column++;
+            
+            if (lexer->current_char == '=') {
+                token.lexeme[1] = '=';
+                token.lexeme[2] = '\0';
+                token.type = OP_LE;
+                lexer->current_char = fgetc(lexer->file);
+                lexer->column++;
+            } else if (lexer->current_char == '>') {
+                token.lexeme[1] = '>';
+                token.lexeme[2] = '\0';
+                token.type = OP_NE;
+                lexer->current_char = fgetc(lexer->file);
+                lexer->column++;
+            } else {
+                token.lexeme[1] = '\0';
+                token.type = OP_LT;
+            }
+            break;
+            
+        case '>':
+            token.lexeme[0] = lexer->current_char;
+            lexer->current_char = fgetc(lexer->file);
+            lexer->column++;
+            
+            if (lexer->current_char == '=') {
+                token.lexeme[1] = '=';
+                token.lexeme[2] = '\0';
+                token.type = OP_GE;
+                lexer->current_char = fgetc(lexer->file);
+                lexer->column++;
+            } else {
+                token.lexeme[1] = '\0';
+                token.type = OP_GT;
+            }
+            break;
+            
+        case '=':
+            token.lexeme[0] = lexer->current_char;
+            token.lexeme[1] = '\0';
+            token.type = OP_EQ;
+            lexer->current_char = fgetc(lexer->file);
+            lexer->column++;
+            break;
+            
+        case '+':
+            token.lexeme[0] = lexer->current_char;
+            token.lexeme[1] = '\0';
+            token.type = OP_AD;
+            lexer->current_char = fgetc(lexer->file);
+            lexer->column++;
+            break;
+            
+        case '-':
+            token.lexeme[0] = lexer->current_char;
+            token.lexeme[1] = '\0';
+            token.type = OP_MIN;
+            lexer->current_char = fgetc(lexer->file);
+            lexer->column++;
+            break;
+            
+        case '*':
+            token.lexeme[0] = lexer->current_char;
+            token.lexeme[1] = '\0';
+            token.type = OP_MUL;
+            lexer->current_char = fgetc(lexer->file);
+            lexer->column++;
+            break;
+            
+        case '/':
+            token.lexeme[0] = lexer->current_char;
+            token.lexeme[1] = '\0';
+            token.type = OP_DIV;
+            lexer->current_char = fgetc(lexer->file);
+            lexer->column++;
+            break;
+            
+        case '}':
+            token.lexeme[0] = lexer->current_char;
+            token.lexeme[1] = '\0';
+            token.type = SMB_CBC;
+            lexer->current_char = fgetc(lexer->file);
+            lexer->column++;
+            break;
+            
+        case '(':
+            token.lexeme[0] = lexer->current_char;
+            token.lexeme[1] = '\0';
+            token.type = SMB_OPA;
+            lexer->current_char = fgetc(lexer->file);
+            lexer->column++;
+            break;
+            
+        case ')':
+            token.lexeme[0] = lexer->current_char;
+            token.lexeme[1] = '\0';
+            token.type = SMB_CPA;
+            lexer->current_char = fgetc(lexer->file);
+            lexer->column++;
+            break;
+            
+        case ',':
+            token.lexeme[0] = lexer->current_char;
+            token.lexeme[1] = '\0';
+            token.type = SMB_COM;
+            lexer->current_char = fgetc(lexer->file);
+            lexer->column++;
+            break;
+            
+        case ';':
+            token.lexeme[0] = lexer->current_char;
+            token.lexeme[1] = '\0';
+            token.type = SMB_SEM;
+            lexer->current_char = fgetc(lexer->file);
+            lexer->column++;
+            break;
+
+        case '\'': {
+            int start_line = lexer->line;
+            int start_column = lexer->column;
+            int i = 0;
+
+            token.lexeme[i++] = '\''; 
+
+            lexer->current_char = fgetc(lexer->file);
+            lexer->column++;
+
+            while (lexer->current_char != '\'' && lexer->current_char != EOF && lexer->current_char != '\n') {
+                if (i >= MAX_LEXEME - 2) { 
+                    token.type = TOK_ERROR;
+                    sprintf(token.lexeme, "String muito longa na linha %d, coluna %d", start_line, start_column);
+                    return token;
+                }
+                token.lexeme[i++] = lexer->current_char;
+                lexer->current_char = fgetc(lexer->file);
+                lexer->column++;
+            }
+
+            if (lexer->current_char == '\'') {
+                token.lexeme[i++] = '\''; 
+                token.lexeme[i] = '\0';
+                token.type = TOK_STRING;
+                lexer->current_char = fgetc(lexer->file); 
+                lexer->column++;
+            } else {
+                token.lexeme[i] = '\0';
+                token.type = TOK_ERROR;
+                sprintf(token.lexeme, "String não fechada na linha %d, coluna %d", start_line, start_column);
                 }
             }
-        }
-        else {
-            // Não é parte do número, voltar
-            if(c != EOF) {
-                fseek(fp, -1, SEEK_CUR);
-            }
             break;
-        }
-    }
-    
-    lexeme[len] = '\0';
-    
-    strcpy(token.lexeme, lexeme);
-    token.line = startLine;
-    token.column = startCol;
-    token.type = isReal ? TK_REAL : TK_INTEGER;
-    
-    return token;
-}
-
-// Analisa operadores, delimitadores e atribuição
-Token analyzeSymbol(FILE* fp, int startLine, int startCol, int firstChar) {
-    Token token;
-    int c = fgetc(fp);
-    
-    token.line = startLine;
-    token.column = startCol;
-    
-    // Verificar operadores de dois caracteres
-    if(c != EOF) {
-        char twoChars[3] = {firstChar, c, '\0'};
-        
-        if(strcmp(twoChars, ":=") == 0) {
-            strcpy(token.lexeme, twoChars);
-            token.type = OP_ASS;
-            return token;
-        }
-        else if(strcmp(twoChars, "<=") == 0) {
-            strcpy(token.lexeme, twoChars);
-            token.type = OP_LE;
-            return token;
-        }
-        else if(strcmp(twoChars, ">=") == 0) {
-            strcpy(token.lexeme, twoChars);
-            token.type = OP_GE;
-            return token;
-        }
-        else if(strcmp(twoChars, "<>") == 0) {
-            strcpy(token.lexeme, twoChars);
-            token.type = OP_NE;
-            return token;
-        }
-        else {
-            // Não é operador de dois caracteres, voltar o caractere
-            fseek(fp, -1, SEEK_CUR);
-        }
-    }
-    
-    // Operadores e símbolos de um caractere
-    token.lexeme[0] = firstChar;
-    token.lexeme[1] = '\0';
-    
-    switch(firstChar) {
-        case '=': token.type = OP_EQ; break;
-        case '<': token.type = OP_LT; break;
-        case '>': token.type = OP_GT; break;
-        case '+': token.type = OP_AD; break;
-        case '-': token.type = OP_MIN; break;
-        case '*': token.type = OP_MUL; break;
-        case '/': token.type = OP_DIV; break;
-        
-        case '{': token.type = SMB_OBC; break;
-        case '}': token.type = SMB_CBC; break;
-        case ',': token.type = SMB_COM; break;
-        case ';': token.type = SMB_SEM; break;
-        case '(': token.type = SMB_OPA; break;
-        case ')': token.type = SMB_CPA; break;
-        case '.': token.type = SMB_DOT; break;
-        case ':': token.type = SMB_COL; break;
-            
+     
         default:
-            token.type = TK_UNKNOWN;
-            printf("Erro léxico: caractere desconhecido '%c' na linha %d, coluna %d\n", 
-                   firstChar, startLine, startCol);
+            token.type = TOK_ERROR;
+            sprintf(token.lexeme, "Caractere desconhecido: '%c'", lexer->current_char);
+            lexer->current_char = fgetc(lexer->file);
+            lexer->column++;
             break;
     }
-    
     return token;
 }
 
-// Função principal do analisador léxico
-void lexicalAnalyzer(FILE* sourceFile, FILE* lexFile) {
-    int c, line = 1, column = 0;
-    
-    while((c = fgetc(sourceFile)) != EOF) {
-        column++;
-        
-        // Ignorar espaços em branco e tabs
-        if(c == ' ' || c == '\t') {
-            continue;
-        }
-        
-        // Contar linhas
-        if(c == '\n') {
-            line++;
-            column = 0;
-            continue;
-        }
-        
-        Token token;
-        
-        if(isalpha(c)) {
-            // Identificador ou palavra-chave
-            token = analyzeIdentifier(sourceFile, line, column, c);
-        }
-        else if(isdigit(c)) {
-            // Número
-            token = analyzeNumber(sourceFile, line, column, c);
-        }
-        else if(c == '+' || c == '-') {
-            // Verificar se é operador ou início de número
-            int next = fgetc(sourceFile);
-            if(isdigit(next)) {
-                // É um sinal de número
-                fseek(sourceFile, -1, SEEK_CUR);
-                token = analyzeNumber(sourceFile, line, column, c);
-            } else {
-                // É um operador
-                fseek(sourceFile, -1, SEEK_CUR);
-                token = analyzeSymbol(sourceFile, line, column, c);
-            }
-        }
-        else {
-            // Operadores, delimitadores ou caracteres desconhecidos
-            token = analyzeSymbol(sourceFile, line, column, c);
-        }
-        
-        writeToken(lexFile, token);
-    }
-}
+// MAIN
 
 int main(int argc, char* argv[]) {
-    if(argc < 2) {
-        printf("Uso: %s <arquivo fonte>\n", argv[0]);
+    if (argc != 2) {
+        printf("Uso: %s <arquivo.mpas>\n", argv[0]);
         return 1;
     }
     
-    FILE* sourceFile = fopen(argv[1], "r");
-    if(!sourceFile) {
-        printf("Erro ao abrir arquivo %s\n", argv[1]);
+    FILE* file = fopen(argv[1], "r");
+    if (!file) {
+        printf("Erro ao abrir arquivo: %s\n", argv[1]);
         return 1;
     }
     
-    char outputFilename[MAX_LEXEMA];
-    strcpy(outputFilename, argv[1]);
-    char* dot = strrchr(outputFilename, '.');
-    if(dot) *dot = '\0';
-    strcat(outputFilename, ".lex");
+    Lexer* lexer = init_lexer(file);
     
-    FILE* lexFile = fopen(outputFilename, "w");
-    if(!lexFile) {
-        printf("Erro ao criar arquivo de saída.\n");
-        fclose(sourceFile);
+    char output_filename[100];
+    snprintf(output_filename, sizeof(output_filename), "%s.lex", argv[1]);
+    FILE* output_file = fopen(output_filename, "w");
+    
+    if (!output_file) {
+        printf("Erro ao criar arquivo de saída\n");
+        free_lexer(lexer);
         return 1;
     }
     
-    // Inicializar tabela de símbolos com palavras reservadas
-    initializeSymbolTable();
+    fprintf(output_file, "\t\t=== TOKENS RECONHECIDOS ===\n");
+    fprintf(output_file, "%-15s %-18s %-8s %-8s\n", "TOKEN", "LEXEMA", "LINHA", "COLUNA");
+    fprintf(output_file, "--------------------------------------------------\n");
     
-    // Executar análise léxica
-    lexicalAnalyzer(sourceFile, lexFile);
+    printf("\t   === TOKENS RECONHECIDOS ===\n");
+    printf("%-15s %-18s %-8s %-8s\n", "TOKEN", "LEXEMA", "LINHA", "COLUNA");
+    printf("------------------------------------------------\n");
+
+    Token token;
+    int has_errors = 0;
     
-    fclose(sourceFile);
-    fclose(lexFile);
+    do {
+        token = get_next_token(lexer);
+        
+        if (token.type == TOK_ERROR) {
+            has_errors = 1;
+            printf("\033[1;31mERRO\033[0m (Linha %d, Coluna %d): %s\n", 
+                   token.line, token.column, token.lexeme);
+            fprintf(output_file, "ERRO (Linha %d, Coluna %d): %s\n", 
+                    token.line, token.column, token.lexeme);
+        } else if (token.type != TOK_EOF) {
+            printf("\033[1;33m%-15s\033[0m %-20s %-8d %-8d\n", 
+                   token_type_to_string(token.type), token.lexeme, 
+                   token.line, token.column);
+            fprintf(output_file, "%-15s %-20s %-8d %-8d\n", 
+                    token_type_to_string(token.type), token.lexeme, 
+                    token.line, token.column);
+        }
+        
+    } while (token.type != TOK_EOF);
     
-    // Mostrar tabela de símbolos
-    printf("Tabela de Símbolos:\n");
-    printf("-------------------\n");
-    for(int i = 0; i < symbolCount; i++) {
-        printf("<%s, %s>\n", symbolTable[i].lexeme, getTokenTypeName(symbolTable[i].type));
+    print_symbol_table(&lexer->symbol_table);
+    
+    fclose(output_file);
+    free_lexer(lexer);
+    
+    if (has_errors) {
+        printf("\nAnálise léxica concluída com ERROS!\n");
+        return 1;
+    } else {
+        printf("\nAnálise léxica concluída com SUCESSO!\n");
+        printf("Tokens salvos em: %s\n", output_filename);
+        return 0;
     }
-    
-    printf("\nAnálise léxica concluída. Resultados salvos em %s\n", outputFilename);
-    
-    return 0;
 }
