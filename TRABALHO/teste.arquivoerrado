@@ -1,5 +1,0 @@
-program erro1;
-var 1x: integer;   { identificador inválido, começa com número }
-begin
-  x := 5;
-end.
