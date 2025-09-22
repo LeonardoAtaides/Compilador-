@@ -1,0 +1,150 @@
+README - Analisador Léxico para Pascal Simplificado
+Descrição
+Este é um analisador léxico (lexer) desenvolvido em C para processar arquivos fonte escritos em uma linguagem similar ao Pascal (chamada MPAS). O programa identifica tokens, classifica-os e constrói uma tabela de símbolos durante a análise.
+
+Funcionalidades
+Análise léxica completa: Reconhece palavras reservadas, identificadores, literais, operadores e símbolos
+
+Tabela de símbolos: Armazena identificadores e palavras reservadas com seus respectivos tipos
+
+Tratamento de erros: Detecta e reporta erros léxicos com informações de linha e coluna
+
+Saída colorida: Exibe tokens com cores no terminal para melhor visualização
+
+Geração de arquivo de saída: Salva os resultados em um arquivo .lex
+
+Tokens Reconhecidos
+Palavras Reservadas
+PROGRAM, VAR, INTEGER, REAL, BEGIN, END
+
+IF, THEN, ELSE, WHILE, DO
+
+Operadores
+Aritméticos: + (OP_AD), - (OP_MIN), * (OP_MUL), / (OP_DIV)
+
+Relacionais: = (OP_EQ), <> (OP_NE), < (OP_LT), > (OP_GT), <= (OP_LE), >= (OP_GE)
+
+Atribuição: := (OP_ASS)
+
+Símbolos
+{ (SMB_OBC), } (SMB_CBC), ( (SMB_OPA), ) (SMB_CPA)
+
+, (SMB_COM), ; (SMB_SEM), : (SMB_COLON), . (SMB_DOT)
+
+Literais
+Inteiros (LIT_INT)
+
+Reais (LIT_REAL)
+
+Reais com expoente (LIT_REAL_EXP)
+
+Strings entre aspas simples (TOK_STRING)
+
+Compilação e Execução
+Compilar o programa:
+bash
+gcc teste.c -o analisadorlexico
+Executar o programa:
+bash
+.\analisadorlexico.exe arquivo_fonte.mpas
+Exemplos de uso:
+bash
+.\analisadorlexico.exe teste.arquivocerto
+.\analisadorlexico.exe teste.arquivoerrado
+Estrutura do Código
+Tipos de Dados Principais
+TokenType: Enumeração com todos os tipos de tokens suportados
+
+Symbol: Estrutura para entradas da tabela de símbolos
+
+Token: Estrutura que representa um token reconhecido
+
+Lexer: Estrutura principal do analisador léxico
+
+Funções Principais
+init_lexer(): Inicializa o analisador léxico
+
+get_next_token(): Obtém o próximo token do arquivo fonte
+
+init_symbol_table(): Inicializa a tabela de símbolos
+
+insert_symbol(): Insere um símbolo na tabela
+
+print_symbol_table(): Exibe a tabela de símbolos
+
+Características de Implementação
+Tratamento de Comentários
+Comentários delimitados por { e }
+
+Detecta comentários não fechados e reporta erro
+
+Tratamento de Strings
+Strings delimitadas por aspas simples (')
+
+Detecta strings não fechadas e reporta erro
+
+Validação de Operadores
+Verifica combinações válidas de operadores
+
+Reporta operadores inválidos
+
+Características Especiais
+Case-insensitive: Palavras reservadas são reconhecidas independentemente de maiúsculas/minúsculas
+
+Números com sinal: Suporta números positivos e negativos
+
+Números em notação científica: Suporta formato 1.23E+10
+
+Saída do Programa
+O programa gera duas saídas:
+
+No terminal: Exibição colorida dos tokens reconhecidos
+
+Arquivo .lex: Arquivo texto com todos os tokens e informações de erro
+
+Formato da Saída:
+text
+TOKEN           LEXEMA              LINHA    COLUNA
+--------------------------------------------------
+PROGRAM         program             1        1
+ID              exemplo             1        9
+Tratamento de Erros
+O analisador detecta e reporta os seguintes tipos de erro:
+
+Caracteres desconhecidos
+
+Operadores inválidos
+
+Comentários não fechados
+
+Strings não fechadas
+
+Strings muito longas
+
+Exemplo de Arquivo de Entrada Válido
+pascal
+program exemplo;
+var
+  x: integer;
+begin
+  x := 10;
+  if x > 5 then
+    x := x + 1;
+end.
+Limitações
+Tamanho máximo de lexema: 100 caracteres
+
+Tamanho máximo da tabela de símbolos: 100 entradas
+
+Não suporta todos os recursos do Pascal completo
+
+Estrutura de Arquivos
+teste.c: Código fonte completo do analisador léxico
+
+teste.arquivocerto: Exemplo de arquivo fonte correto
+
+teste.arquivoerrado: Exemplo de arquivo fonte com erros
+
+*.lex: Arquivos de saída gerados pelo analisador
+
+Este analisador léxico é uma ferramenta educacional que demonstra os princípios fundamentais da análise léxica e construção de compiladores.
