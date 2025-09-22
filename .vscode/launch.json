@@ -8,8 +8,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": true,
-      "cwd": "c:/Users/leona/OneDrive/Documentos/Compilador-/BASE",
-      "program": "c:/Users/leona/OneDrive/Documentos/Compilador-/BASE/build/Debug/outDebug",
+      "cwd": "c:/Users/leona/OneDrive/Documentos/Compilador-/TESTE",
+      "program": "c:/Users/leona/OneDrive/Documentos/Compilador-/TESTE/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [
