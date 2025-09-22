@@ -1,7 +1,6 @@
 build
 output
 /.vscode
-.vscode
 analisadorlexico.exe
 testecerto.1.lex
 testecerto.2.lex
