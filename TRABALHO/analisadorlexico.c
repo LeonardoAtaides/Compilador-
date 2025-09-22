@@ -1,6 +1,8 @@
-// gcc teste.c -o analisadorlexico
-// .\analisadorlexico.exe teste.arquivocerto
-// .\analisadorlexico.exe teste.arquivoerrado
+// Como compilar e executar:
+// cd TRABALHO
+// gcc analisadorlexico.c -o analisadorlexico
+// .\analisadorlexico.exe testecerto.1
+// .\analisadorlexico.exe teste.errado.11
 
 #include <stdio.h>
 #include <stdlib.h>
