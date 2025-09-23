@@ -1,5 +1,5 @@
 *Analisador Léxico para Pascal Simplificado*
-Este é um analisador léxico (lexer) desenvolvido em C para processar arquivos fonte escritos em uma linguagem similar ao Pascal (chamada MPAS). O programa identifica tokens, classifica-os e constrói uma tabela de símbolos durante a análise.
+Este é um analisador léxico desenvolvido em C para processar arquivos fonte escritos em uma linguagem similar ao Pascal. O programa identifica tokens, classifica-os e constrói uma tabela de símbolos durante a análise.
 
 *Funcionalidades*: Reconhece palavras reservadas, identificadores, literais, operadores e símbolos
 - Tabela de símbolos: Armazena identificadores e palavras reservadas com seus respectivos tipos
