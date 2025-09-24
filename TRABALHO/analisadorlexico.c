@@ -2,7 +2,7 @@
 // cd TRABALHO
 // gcc analisadorlexico.c -o analisadorlexico
 // .\analisadorlexico.exe testecerto.1
-// .\analisadorlexico.exe teste.errado.11
+// .\analisadorlexico.exe testeerrado.1
 
 #include <stdio.h>
 #include <stdlib.h>
