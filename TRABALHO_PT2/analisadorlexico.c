@@ -720,7 +720,7 @@ void mostrar_contexto_erro() {
         for (int i = 1; i < current_token.column; i++) {
             printf(" ");
         }
-        printf("\033[1;31mErro nesta linha acima\033[0m\n");
+        printf("\033[1;33mO Erro esta nesta linha acima\033[0m\n");
     }
     
     fclose(file);
