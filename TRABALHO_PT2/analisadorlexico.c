@@ -732,6 +732,7 @@ void ParteDeclaracoesVariaveis() {
             DeclaracaoVariaveis();
         }
     }
+    // VAR é opcional - se não tiver, simplesmente continua
 }
 
 void DeclaracaoVariaveis() {
