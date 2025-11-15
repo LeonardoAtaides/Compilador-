@@ -21,7 +21,7 @@ typedef enum {
     
     // Operadores
     OP_EQ, OP_GE, OP_MUL, OP_NE, OP_LE, OP_DIV, OP_GT, OP_AD, 
-    OP_ASS, OP_LT, OP_MIN,
+    OP_ASS, OP_LT, OP_MIN,OP_MOD,
     
     // Símbolos
     SMB_OBC, SMB_COM, SMB_CBC, SMB_SEM, SMB_OPA, SMB_CPA,
@@ -154,6 +154,7 @@ const char* token_type_to_string(TokenType type) {
         case TOK_EOF: return "EOF";
         case TOK_ERROR: return "ERROR";
         case TOK_STRING: return "STRING";
+        case OP_MOD: return "OP_MOD";
 
         default: return "UNKNOWN";
     }
@@ -172,6 +173,7 @@ void init_symbol_table(SymbolTable* table) {
     insert_symbol(table, "else", TOK_ELSE);
     insert_symbol(table, "while", TOK_WHILE);
     insert_symbol(table, "do", TOK_DO);
+    insert_symbol(table, "mod", OP_MOD);
 }
 
 int insert_symbol(SymbolTable* table, const char* name, TokenType type) {
@@ -367,6 +369,7 @@ Token get_next_token(Lexer* lexer) {
         else if (strcmp(token.lexeme, "else") == 0) token.type = TOK_ELSE;
         else if (strcmp(token.lexeme, "while") == 0) token.type = TOK_WHILE;
         else if (strcmp(token.lexeme, "do") == 0) token.type = TOK_DO;
+        else if (strcmp(token.lexeme, "mod") == 0) token.type = OP_MOD;
         else {
             token.type = ID;
             insert_symbol(&lexer->symbol_table, token.lexeme, ID);
@@ -975,9 +978,12 @@ void Termo() {
     if (has_syntax_errors) return;
     printf("Analisando: termo\n");
     Fator();
-    while (!has_syntax_errors && (current_token.type == OP_MUL || current_token.type == OP_DIV)) {
+    while (!has_syntax_errors && 
+           (current_token.type == OP_MUL || current_token.type == OP_DIV || 
+            current_token.type == OP_MOD)) {  // ADICIONE OP_MOD AQUI
         if (current_token.type == OP_MUL) CasaToken(OP_MUL);
-        else CasaToken(OP_DIV);
+        else if (current_token.type == OP_DIV) CasaToken(OP_DIV);
+        else if (current_token.type == OP_MOD) CasaToken(OP_MOD);  // ADICIONE ESTE CASO
         if (has_syntax_errors) break;
         Fator();
     }
