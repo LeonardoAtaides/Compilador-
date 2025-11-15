@@ -704,26 +704,24 @@ void mostrar_contexto_erro() {
         
         printf("     Linha %d: %s\n", current_token.line, linha);
         
-        // Mostra indicador da posição do erro
+        // Mostrar o Erro
         printf("     ");
         for (int i = 1; i < current_token.column; i++) {
             if (i < (int)strlen(linha) && linha[i-1] == '\t') {
-                printf("\t"); // Para tabs
+                printf("\t"); 
             } else {
                 printf(" ");
             }
         }
         printf("\033[1;31m^\033[0m\n");
-        printf("     ");
         for (int i = 1; i < current_token.column; i++) {
             printf(" ");
         }
-        printf("\033[1;31mErro aqui\033[0m\n");
+        printf("\033[1;31mErro nesta linha acima\033[0m\n");
     }
     
     fclose(file);
     
-    // Restaura a posição do arquivo
     fseek(global_lexer->file, current_pos, SEEK_SET);
 }
 
@@ -736,7 +734,6 @@ void erro_sintatico(const char* mensagem) {
         printf(" - encontrado [%s]\033[0m\n", current_token.lexeme);
     }
     
-    // Mostra a linha onde ocorreu o erro
     mostrar_contexto_erro();
     
     has_syntax_errors = 1;
@@ -775,7 +772,6 @@ void Programa() {
         printf("Programa analisado com sucesso!\n");
     }
     
-    // Verifica se há símbolos extras após o ponto final
     verifica_fim_arquivo();
 }
 
@@ -801,7 +797,6 @@ void ParteDeclaracoesVariaveis() {
             DeclaracaoVariaveis();
         }
     }
-    // VAR é opcional - se não tiver, simplesmente continua
 }
 
 void DeclaracaoVariaveis() {
@@ -842,8 +837,7 @@ void ComandoComposto() {
     printf("Analisando: comando composto\n");
     CasaToken(TOK_BEGIN);
     if (has_syntax_errors) return;
-    
-    // Verificação adicional para evitar loop infinito
+
     if (current_token.type == TOK_EOF) {
         erro_sintatico("comando esperado apos begin");
         return;
@@ -853,8 +847,7 @@ void ComandoComposto() {
     if (has_syntax_errors) return;
     CasaToken(SMB_SEM);
     if (has_syntax_errors) return;
-    
-    // Loop modificado para evitar infinito
+
     while (current_token.type != TOK_END && current_token.type != TOK_EOF && !has_syntax_errors) {
         Comando();
         if (has_syntax_errors) break;
@@ -873,7 +866,6 @@ void Comando() {
     
     printf("Analisando: comando\n");
     
-    // Verificação adicional para EOF
     if (current_token.type == TOK_EOF) {
         erro_sintatico("comando esperado");
         return;
@@ -889,7 +881,6 @@ void Comando() {
         ComandoRepetitivo();
     } else {
         erro_sintatico("comando esperado");
-        // Avança para tentar recuperar
         if (current_token.type != TOK_EOF && current_token.type != TOK_ERROR) {
             current_token = get_next_token(global_lexer);
         }
@@ -1026,7 +1017,6 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     
-    // PRIMEIRA PASSAGEM: Análise Léxica
     printf("=== INICIANDO ANALISE LEXICA ===\n");
     
     FILE* file = fopen(argv[1], "r");
@@ -1058,7 +1048,7 @@ int main(int argc, char* argv[]) {
     Token token;
     int has_lexical_errors = 0;
     
-    // Primeira passagem: análise léxica
+    // 1°: análise léxica
     do {
         token = get_next_token(lexer);
         
@@ -1092,28 +1082,23 @@ int main(int argc, char* argv[]) {
     printf("\nAnalise lexica concluida com SUCESSO!\n");
     printf("Tokens salvos em: %s\n", output_filename);
     
-    // SEGUNDA PASSAGEM: Análise Sintática
+    // 2°: Análise Sintática
     printf("\n=== INICIANDO ANALISE SINTATICA ===\n");
     
-    // CORREÇÃO: Reabrir o arquivo para a análise sintática
     file = fopen(argv[1], "r");
     if (!file) {
         printf("Erro ao reabrir arquivo para analise sintatica: %s\n", argv[1]);
         return 1;
     }
     
-    // Reinicializa o lexer com o arquivo recém-aberto
     lexer = init_lexer(file, argv[1]);
     global_lexer = lexer;
     
-    // Obtém o primeiro token para iniciar a análise sintática
     current_token = get_next_token(lexer);
     has_syntax_errors = 0;
     
-    // Executa a análise sintática
     Programa();
     
-    // Exibe resultado final
     if (has_syntax_errors) {
         printf("\n\033[1;31mAnalise sintatica concluida com ERROS!\033[0m\n");
     } else {
