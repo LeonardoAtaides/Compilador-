@@ -202,7 +202,7 @@ Symbol* find_symbol(SymbolTable* table, const char* name) {
 }
 
 void print_symbol_table(SymbolTable* table) {
-    printf("\n=== TABELA DE SÍMBOLOS ===\n");
+    printf("\n=== TABELA DE SIMBOLOS ===\n");
     printf("%-20s %-15s\n", "Nome", "Tipo");
     printf("--------------------------------\n");
     
@@ -1080,13 +1080,12 @@ int main(int argc, char* argv[]) {
     fclose(output_file);
     
     if (has_lexical_errors) {
-        printf("\nAnalise lexica concluida com ERROS! Analise sintatica nao realizada.\n");
-        free_lexer(lexer);
-        return 1;
+        printf("\nAnalise lexica concluida com \033[1;31mERROS!\033[0m\ncontinuando analise sintatica...\n");
+    } else {
+        printf("\nAnalise lexica concluida com SUCESSO!\n");
     }
     
-    printf("\nAnalise lexica concluida com SUCESSO!\n");
-    printf("Tokens salvos em: %s\n", output_filename);
+    printf("\nTokens salvos em: %s\n", output_filename);
     
     // 2°: Análise Sintática
     printf("\n=== INICIANDO ANALISE SINTATICA ===\n");
@@ -1112,5 +1111,5 @@ int main(int argc, char* argv[]) {
     }
     
     free_lexer(lexer);
-    return has_syntax_errors;
+    return has_syntax_errors || has_lexical_errors;  // Retorna erro se houve qualquer um
 }
