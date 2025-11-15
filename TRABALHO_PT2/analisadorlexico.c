@@ -999,7 +999,7 @@ void Fator() {
         if (has_syntax_errors) return;
         CasaToken(SMB_CPA);
     } else {
-        erro_sintatico("fator esperado (variavel, número ou expressao entre parenteses)");
+        erro_sintatico("fator esperado (variavel, numero ou expressao entre parenteses)");
     }
 }
 
