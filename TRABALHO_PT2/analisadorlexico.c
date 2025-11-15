@@ -12,6 +12,7 @@
 
 #define MAX_SYMBOLS 100
 #define MAX_LEXEME 100
+#define MAX_LINE_LENGTH 256
 
 typedef enum {
     // Palavras reservadas
@@ -56,6 +57,7 @@ typedef struct {
     int line;
     int column;
     SymbolTable symbol_table;
+    char* filename;  // Adicionado para mostrar contexto de erro
 } Lexer;
 
 // FUNÇÕES LÉXICAS
@@ -67,7 +69,7 @@ int insert_symbol(SymbolTable* table, const char* name, TokenType type);
 Symbol* find_symbol(SymbolTable* table, const char* name);
 void print_symbol_table(SymbolTable* table);
 
-Lexer* init_lexer(FILE* file);
+Lexer* init_lexer(FILE* file, const char* filename);
 void free_lexer(Lexer* lexer);
 Token get_next_token(Lexer* lexer);
 void skip_whitespace(Lexer* lexer);
@@ -83,10 +85,13 @@ void to_lower_case(char* str);
 Lexer* global_lexer = NULL;
 Token current_token;
 int has_syntax_errors = 0;
+char* current_filename = NULL;
 
 // FUNÇÕES DO PARSER
 void CasaToken(TokenType tipo_esperado);
 void erro_sintatico(const char* mensagem);
+void verifica_fim_arquivo();
+void mostrar_contexto_erro();
 
 void Programa();
 void Bloco();
@@ -278,18 +283,21 @@ void handle_unclosed_comment(Lexer* lexer, Token* token) {
     }
 }
 
-Lexer* init_lexer(FILE* file) {
+Lexer* init_lexer(FILE* file, const char* filename) {
     Lexer* lexer = malloc(sizeof(Lexer));
     lexer->file = file;
     lexer->current_char = fgetc(file);
     lexer->line = 1;
     lexer->column = 1;
+    lexer->filename = malloc(strlen(filename) + 1);
+    strcpy(lexer->filename, filename);
     init_symbol_table(&lexer->symbol_table);
     return lexer;
 }
 
 void free_lexer(Lexer* lexer) {
     fclose(lexer->file);
+    free(lexer->filename);
     free(lexer);
 }
 
@@ -671,15 +679,73 @@ Token get_next_token(Lexer* lexer) {
 
 // ============ IMPLEMENTAÇÃO DO PARSER ============
 
-void erro_sintatico(const char* mensagem) {
-    if (current_token.type == TOK_EOF) {
-        printf("\033[1;31mERRO SINTÁTICO (Linha %d): fim de arquivo não esperado.\033[0m\n", 
-               current_token.line);
-    } else {
-        printf("\033[1;31mERRO SINTÁTICO (Linha %d): %s [%s].\033[0m\n", 
-               current_token.line, mensagem, current_token.lexeme);
+void mostrar_contexto_erro() {
+    if (global_lexer == NULL || global_lexer->file == NULL) return;
+    
+    // Salva a posição atual do arquivo
+    long current_pos = ftell(global_lexer->file);
+    
+    // Reabre o arquivo para ler a linha específica
+    FILE* file = fopen(global_lexer->filename, "r");
+    if (!file) return;
+    
+    char linha[MAX_LINE_LENGTH];
+    int linha_atual = 1;
+    
+    // Lê até chegar na linha do erro
+    while (linha_atual < current_token.line && fgets(linha, sizeof(linha), file)) {
+        linha_atual++;
     }
+    
+    // Se encontrou a linha do erro, mostra ela
+    if (linha_atual == current_token.line && fgets(linha, sizeof(linha), file)) {
+        // Remove quebra de linha
+        linha[strcspn(linha, "\n")] = '\0';
+        
+        printf("     Linha %d: %s\n", current_token.line, linha);
+        
+        // Mostra indicador da posição do erro
+        printf("     ");
+        for (int i = 1; i < current_token.column; i++) {
+            if (i < (int)strlen(linha) && linha[i-1] == '\t') {
+                printf("\t"); // Para tabs
+            } else {
+                printf(" ");
+            }
+        }
+        printf("\033[1;31m^\033[0m\n");
+        printf("     ");
+        for (int i = 1; i < current_token.column; i++) {
+            printf(" ");
+        }
+        printf("\033[1;31m└── Erro aqui\033[0m\n");
+    }
+    
+    fclose(file);
+    
+    // Restaura a posição do arquivo
+    fseek(global_lexer->file, current_pos, SEEK_SET);
+}
+
+void erro_sintatico(const char* mensagem) {
+    printf("\033[1;31mERRO SINTÁTICO (Linha %d): %s", current_token.line, mensagem);
+    
+    if (current_token.type == TOK_EOF) {
+        printf(" - fim de arquivo encontrado\033[0m\n");
+    } else {
+        printf(" - encontrado [%s]\033[0m\n", current_token.lexeme);
+    }
+    
+    // Mostra a linha onde ocorreu o erro
+    mostrar_contexto_erro();
+    
     has_syntax_errors = 1;
+}
+
+void verifica_fim_arquivo() {
+    if (current_token.type != TOK_EOF && !has_syntax_errors) {
+        erro_sintatico("símbolos extras após fim do programa");
+    }
 }
 
 void CasaToken(TokenType tipo_esperado) {
@@ -708,6 +774,9 @@ void Programa() {
     if (!has_syntax_errors) {
         printf("Programa analisado com sucesso!\n");
     }
+    
+    // Verifica se há símbolos extras após o ponto final
+    verifica_fim_arquivo();
 }
 
 void Bloco() {
@@ -957,14 +1026,16 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     
+    // PRIMEIRA PASSAGEM: Análise Léxica
+    printf("=== INICIANDO ANÁLISE LÉXICA ===\n");
+    
     FILE* file = fopen(argv[1], "r");
     if (!file) {
         printf("Erro ao abrir arquivo: %s\n", argv[1]);
         return 1;
     }
     
-    Lexer* lexer = init_lexer(file);
-    global_lexer = lexer;
+    Lexer* lexer = init_lexer(file, argv[1]);
     
     char output_filename[100];
     snprintf(output_filename, sizeof(output_filename), "%s.lex", argv[1]);
@@ -1021,25 +1092,28 @@ int main(int argc, char* argv[]) {
     printf("\nAnálise léxica concluída com SUCESSO!\n");
     printf("Tokens salvos em: %s\n", output_filename);
     
-    // Segunda passagem: análise sintática
+    // SEGUNDA PASSAGEM: Análise Sintática
     printf("\n=== INICIANDO ANÁLISE SINTÁTICA ===\n");
     
-    // Reinicializa o lexer para a análise sintática
-    fseek(file, 0, SEEK_SET);
-    free_lexer(lexer);
-    lexer = init_lexer(file);
+    // CORREÇÃO: Reabrir o arquivo para a análise sintática
+    file = fopen(argv[1], "r");
+    if (!file) {
+        printf("Erro ao reabrir arquivo para análise sintática: %s\n", argv[1]);
+        return 1;
+    }
+    
+    // Reinicializa o lexer com o arquivo recém-aberto
+    lexer = init_lexer(file, argv[1]);
     global_lexer = lexer;
     
+    // Obtém o primeiro token para iniciar a análise sintática
     current_token = get_next_token(lexer);
     has_syntax_errors = 0;
     
     // Executa a análise sintática
     Programa();
     
-    if (current_token.type != TOK_EOF && !has_syntax_errors) {
-        erro_sintatico("fim de arquivo esperado");
-    }
-    
+    // Exibe resultado final
     if (has_syntax_errors) {
         printf("\n\033[1;31mAnálise sintática concluída com ERROS!\033[0m\n");
     } else {
