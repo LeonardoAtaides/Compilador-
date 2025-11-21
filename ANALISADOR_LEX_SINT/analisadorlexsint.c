@@ -1003,7 +1003,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     
-    printf("=== INICIANDO ANALISE LEXICA ===\n");
+    printf("\t\t--- ANALISE LEXICA ---\n");
     
     FILE* file = fopen(argv[1], "r");
     if (!file) {
@@ -1066,7 +1066,7 @@ int main(int argc, char* argv[]) {
     
     printf("\nTokens salvos em: %s\n", output_filename);
     
-    printf("\n=== INICIANDO ANALISE SINTATICA ===\n");
+    printf("\n\t---- ANALISE SINTATICA ----\n");
     
     file = fopen(argv[1], "r");
     if (!file) {
