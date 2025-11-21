@@ -1,33 +1,32 @@
-*Analisador para Pascal Simplificado*
-Este é um analisador léxicoN e sintático desenvolvido em C para processar arquivos fonte escritos em uma linguagem similar ao Pascal. O programa identifica tokens, classifica-os e constrói uma tabela de símbolos durante a análise e verificar a sintatica escrita afim de enviar erros quando a sintaxe do programa não fizer sentido de acordo com o tokens da gramatica da linguagem.
+# Analisador para Pascal Simplificado*
+Este é um analisador léxico e sintático desenvolvido em C para processar arquivos fonte escritos em uma linguagem similar ao Pascal. O programa identifica tokens, classifica-os e constrói uma tabela de símbolos durante a análise, além de verificar a sintaxe do programa para identificar erros de acordo com a gramática da linguagem.
 
-*Funcionalidades*: Reconhece palavras reservadas, identificadores, literais, operadores e símbolos
+## Funcionalidades: 
+*Reconhece palavras reservadas, identificadores, literais, operadores, símbolos e verifica as estrutura gramatical do programa*
 - Tabela de símbolos: Armazena identificadores e palavras reservadas com seus respectivos tipos
-- Tratamento de erros: Detecta e reporta erros léxicos com informações de linha e coluna
+- Tratamento de erros: Detecta e reporta erros léxicos e sintáticos com informações de linha e coluna
 - Saída colorida: Exibe tokens com cores no terminal para melhor visualização
-- Geração de arquivo de saída: Salva os resultados em um arquivo .lex
+- Geração de arquivo de saída: alva os resultados em arquivos .lex (tokens) e .syntax (regras de produção)
 
-Compilação e Execução
-Compilar o programa:
-Primeiro tem que estar na pasta *ANALISADOR_LEX_SINT*:
-cd .\ANALISADOR_LEX_SINT\
-bash
-gcc analisadorlexsint.c -o analisadorlexsint
-Executar o programa:
-bash -  Exemplos:
-.\analisadorlexsint.exe testecerto.1
-.\analisadorlexisint.exe testeerrado.1
+## Compilação 
+Como compilar o programa:
+1° passo - tem que estar na pasta *ANALISADOR_LEX_SINT*:
+2° passo - cd .\ANALISADOR_LEX_SINT\
+3° passo - dar o comando: gcc analisadorlexsint.c -o analisadorlexsint
+
+## Executar o programa:
+Como executar o programa? existe arquivos de testes deixados prontos para testes basta apenas copiar e colar 
 *CONTÉM TRÊS TIPOS DE TESTES, TANTO PARA OS CERTOS QUANTO PARA OS ERRADOS, CADA UM SE TRATANDO DE UMA EXECUÇÃO DE CÓDIGO DIFERENTE*
-**segue a lista dos comandos para testes**
-Testes com saída certas:
-- .\analisadorlexsint.exe testecerto.1
-- .\analisadorlexsint.exe testecerto.2
-- .\analisadorlexsint.exe testecerto.3
+**Segue a lista dos comandos para testes**
+Testes certos:
+.\analisadorlexsint.exe testecerto.1
+.\analisadorlexsint.exe testecerto.2
+.\analisadorlexsint.exe testecerto.3
 
-Testes com erros
-- .\analisadorlexisint.exe testeerrado.1
-- .\analisadorlexisint.exe testeerrado.2
-- .\analisadorlexisint.exe testeerrado.3
+Testes com erros:
+.\analisadorlexisint.exe testeerrado.1
+.\analisadorlexisint.exe testeerrado.2
+.\analisadorlexisint.exe testeerrado.3
 
 Limitações
 -Tamanho máximo de lexema: 100 caracteres
