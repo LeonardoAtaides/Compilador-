@@ -1,9 +1,3 @@
-// Como compilar e executar:
-// cd TRABALHO
-// gcc analisadorlexico.c -o analisadorlexico
-// .\analisadorlexico.exe testecerto.1
-// .\analisadorlexico.exe testeerrado.1
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,6 +6,7 @@
 
 #define MAX_SYMBOLS 100
 #define MAX_LEXEME 100
+#define MAX_LINE_LENGTH 256
 
 typedef enum {
     // Palavras reservadas
@@ -20,7 +15,7 @@ typedef enum {
     
     // Operadores
     OP_EQ, OP_GE, OP_MUL, OP_NE, OP_LE, OP_DIV, OP_GT, OP_AD, 
-    OP_ASS, OP_LT, OP_MIN,
+    OP_ASS, OP_LT, OP_MIN,OP_MOD,
     
     // Símbolos
     SMB_OBC, SMB_COM, SMB_CBC, SMB_SEM, SMB_OPA, SMB_CPA,
@@ -29,7 +24,7 @@ typedef enum {
     // Identificadores e
     ID, LIT_INT, LIT_REAL, LIT_REAL_EXP,TOK_STRING,
     
-    // Fim de arquivo e erro
+    // Fim do arquivo e erro
     TOK_EOF, TOK_ERROR
 } TokenType;
 
@@ -56,9 +51,8 @@ typedef struct {
     int line;
     int column;
     SymbolTable symbol_table;
+    char* filename; 
 } Lexer;
-
-// FUNÇÕES
 
 const char* token_type_to_string(TokenType type);
 
@@ -67,7 +61,7 @@ int insert_symbol(SymbolTable* table, const char* name, TokenType type);
 Symbol* find_symbol(SymbolTable* table, const char* name);
 void print_symbol_table(SymbolTable* table);
 
-Lexer* init_lexer(FILE* file);
+Lexer* init_lexer(FILE* file, const char* filename);
 void free_lexer(Lexer* lexer);
 Token get_next_token(Lexer* lexer);
 void skip_whitespace(Lexer* lexer);
@@ -78,6 +72,34 @@ bool is_valid_operator_start(char c);
 void handle_unclosed_comment(Lexer* lexer, Token* token);
 
 void to_lower_case(char* str);
+
+Lexer* global_lexer = NULL;
+Token current_token;
+int has_syntax_errors = 0;
+char* current_filename = NULL;
+
+void CasaToken(TokenType tipo_esperado);
+void erro_sintatico(const char* mensagem);
+void verifica_fim_arquivo();
+void mostrar_contexto_erro();
+
+void Programa();
+void Bloco();
+void ParteDeclaracoesVariaveis();
+void DeclaracaoVariaveis();
+void ListaIdentificadores();
+void Tipo();
+void ComandoComposto();
+void Comando();
+void Atribuicao();
+void ComandoCondicional();
+void ComandoRepetitivo();
+void Expressao();
+void Relacao();
+void ExpressaoSimples();
+void Termo();
+void Fator();
+void Variavel();
 
 const char* token_type_to_string(TokenType type) {
     switch (type) {
@@ -122,6 +144,7 @@ const char* token_type_to_string(TokenType type) {
         case TOK_EOF: return "EOF";
         case TOK_ERROR: return "ERROR";
         case TOK_STRING: return "STRING";
+        case OP_MOD: return "OP_MOD";
 
         default: return "UNKNOWN";
     }
@@ -140,6 +163,7 @@ void init_symbol_table(SymbolTable* table) {
     insert_symbol(table, "else", TOK_ELSE);
     insert_symbol(table, "while", TOK_WHILE);
     insert_symbol(table, "do", TOK_DO);
+    insert_symbol(table, "mod", OP_MOD);
 }
 
 int insert_symbol(SymbolTable* table, const char* name, TokenType type) {
@@ -168,7 +192,7 @@ Symbol* find_symbol(SymbolTable* table, const char* name) {
 }
 
 void print_symbol_table(SymbolTable* table) {
-    printf("\n=== TABELA DE SÍMBOLOS ===\n");
+    printf("\n=== TABELA DE SIMBOLOS ===\n");
     printf("%-20s %-15s\n", "Nome", "Tipo");
     printf("--------------------------------\n");
     
@@ -211,10 +235,10 @@ bool is_valid_single_char_operator(char c) {
 }
 
 bool is_valid_operator_combination(char current, char next) {
-    if (current == ':' && next == '=') return true;    // :=
-    if (current == '<' && next == '=') return true;    // <=
-    if (current == '<' && next == '>') return true;    // <>
-    if (current == '>' && next == '=') return true;    // >=
+    if (current == ':' && next == '=') return true;    
+    if (current == '<' && next == '=') return true;    
+    if (current == '<' && next == '>') return true;   
+    if (current == '>' && next == '=') return true;    
     
     if (is_valid_single_char_operator(current) && 
         !is_valid_operator_start(next)) {
@@ -240,29 +264,32 @@ void handle_unclosed_comment(Lexer* lexer, Token* token) {
     
     if (lexer->current_char == '}') {
         token->type = TOK_ERROR;
-        sprintf(token->lexeme, "Conteúdo entre { } não permitido (comentários não suportados)");
+        sprintf(token->lexeme, "Conteudo entre { } nao permitido (comentarios nao suportados)");
         lexer->current_char = fgetc(lexer->file);
         lexer->column++;
     } else {
 
         token->type = TOK_ERROR;
-        sprintf(token->lexeme, "Comentário não fechado iniciado na linha %d, coluna %d", 
+        sprintf(token->lexeme, "Comentario nao fechado iniciado na linha %d, coluna %d", 
                 start_line, start_column);
     }
 }
 
-Lexer* init_lexer(FILE* file) {
+Lexer* init_lexer(FILE* file, const char* filename) {
     Lexer* lexer = malloc(sizeof(Lexer));
     lexer->file = file;
     lexer->current_char = fgetc(file);
     lexer->line = 1;
     lexer->column = 1;
+    lexer->filename = malloc(strlen(filename) + 1);
+    strcpy(lexer->filename, filename);
     init_symbol_table(&lexer->symbol_table);
     return lexer;
 }
 
 void free_lexer(Lexer* lexer) {
     fclose(lexer->file);
+    free(lexer->filename);
     free(lexer);
 }
 
@@ -332,6 +359,7 @@ Token get_next_token(Lexer* lexer) {
         else if (strcmp(token.lexeme, "else") == 0) token.type = TOK_ELSE;
         else if (strcmp(token.lexeme, "while") == 0) token.type = TOK_WHILE;
         else if (strcmp(token.lexeme, "do") == 0) token.type = TOK_DO;
+        else if (strcmp(token.lexeme, "mod") == 0) token.type = OP_MOD;
         else {
             token.type = ID;
             insert_symbol(&lexer->symbol_table, token.lexeme, ID);
@@ -411,11 +439,11 @@ Token get_next_token(Lexer* lexer) {
         if (!is_valid_operator_combination(lexer->current_char, next_char)) {
             token.type = TOK_ERROR;
             if (is_valid_operator_start(next_char)) {
-                sprintf(token.lexeme, "Operador inválido: '%c%c'", lexer->current_char, next_char);
+                sprintf(token.lexeme, "Operador invalido: '%c%c'", lexer->current_char, next_char);
                 lexer->current_char = fgetc(lexer->file);
                 lexer->column++;
             } else {
-                sprintf(token.lexeme, "Operador inválido: '%c'", lexer->current_char);
+                sprintf(token.lexeme, "Operador invalido: '%c'", lexer->current_char);
             }
             lexer->current_char = fgetc(lexer->file);
             lexer->column++;
@@ -451,13 +479,13 @@ Token get_next_token(Lexer* lexer) {
             
         case '"': 
             token.type = TOK_ERROR;
-            strcpy(token.lexeme, " O caracter \" não é permitido");
+            strcpy(token.lexeme, " O caracter \" nao e permitido");
             while (lexer->current_char != EOF && lexer->current_char != '"' && lexer->current_char != '\n') {
                 lexer->current_char = fgetc(lexer->file);
                 lexer->column++;
             }
             if (lexer->current_char == '\n') {
-                sprintf(token.lexeme, "String não fechada antes da quebra de linha");
+                sprintf(token.lexeme, "String nao fechada antes da quebra de linha");
             } else if (lexer->current_char == '"') {
                 lexer->current_char = fgetc(lexer->file);
                 lexer->column++;
@@ -627,7 +655,7 @@ Token get_next_token(Lexer* lexer) {
             } else {
                 token.lexeme[i] = '\0';
                 token.type = TOK_ERROR;
-                sprintf(token.lexeme, "String não fechada na linha %d, coluna %d", start_line, start_column);
+                sprintf(token.lexeme, "String nao fechada na linha %d, coluna %d", start_line, start_column);
                 }
             }
             break;
@@ -642,7 +670,332 @@ Token get_next_token(Lexer* lexer) {
     return token;
 }
 
-// MAIN
+
+void mostrar_contexto_erro() {
+    if (global_lexer == NULL || global_lexer->file == NULL) return;
+    
+    long current_pos = ftell(global_lexer->file);
+    
+    FILE* file = fopen(global_lexer->filename, "r");
+    if (!file) return;
+    
+    char linha[MAX_LINE_LENGTH];
+    int linha_atual = 1;
+    
+    while (linha_atual < current_token.line && fgets(linha, sizeof(linha), file)) {
+        linha_atual++;
+    }
+
+    if (linha_atual == current_token.line && fgets(linha, sizeof(linha), file)) {
+        linha[strcspn(linha, "\n")] = '\0';
+        
+        printf("     Linha %d: %s\n", current_token.line, linha);
+        
+        printf("     ");
+        for (int i = 1; i < current_token.column; i++) {
+            if (i < (int)strlen(linha) && linha[i-1] == '\t') {
+                printf("\t"); 
+            } else {
+                printf(" ");
+            }
+        }
+        printf("\033[1;31m^\033[0m\n");
+        for (int i = 1; i < current_token.column; i++) {
+            printf(" ");
+        }
+        printf("\033[1;33mO Erro esta nesta linha acima\033[0m\n");
+    }
+    
+    fclose(file);
+    
+    fseek(global_lexer->file, current_pos, SEEK_SET);
+}
+
+void erro_sintatico(const char* mensagem) {
+    printf("\033[1;31mERRO SINTATICO (Linha %d): %s", current_token.line, mensagem);
+    
+    if (current_token.type == TOK_EOF) {
+        printf(" - fim de arquivo encontrado\033[0m\n");
+    } else {
+        printf(" - encontrado [%s]\033[0m\n", current_token.lexeme);
+    }
+    
+    mostrar_contexto_erro();
+    
+    has_syntax_errors = 1;
+}
+
+void verifica_fim_arquivo() {
+    if (current_token.type != TOK_EOF && !has_syntax_errors) {
+        erro_sintatico("simbolos extras apos fim do programa");
+    }
+}
+
+void CasaToken(TokenType tipo_esperado) {
+    if (current_token.type == tipo_esperado) {
+        current_token = get_next_token(global_lexer);
+    } else {
+        erro_sintatico("token nao esperado");
+        if (current_token.type != TOK_EOF && current_token.type != TOK_ERROR) {
+            current_token = get_next_token(global_lexer);
+        }
+    }
+}
+
+void Programa() {
+    printf("Analisando: programa\n");
+    CasaToken(TOK_PROGRAM);
+    if (has_syntax_errors) return;
+    CasaToken(ID);
+    if (has_syntax_errors) return;
+    CasaToken(SMB_SEM);
+    if (has_syntax_errors) return;
+    Bloco();
+    if (has_syntax_errors) return;
+    CasaToken(SMB_DOT);
+    if (!has_syntax_errors) {
+        printf("Programa analisado com sucesso!\n");
+    }
+    
+    verifica_fim_arquivo();
+}
+
+void Bloco() {
+    if (has_syntax_errors) return;
+    printf("Analisando: bloco\n");
+    ParteDeclaracoesVariaveis();
+    if (has_syntax_errors) return;
+    ComandoComposto();
+}
+
+void ParteDeclaracoesVariaveis() {
+    if (has_syntax_errors) return;
+    printf("Analisando: parte de declaracoes de variaveis\n");
+    if (current_token.type == TOK_VAR) {
+        CasaToken(TOK_VAR);
+        if (has_syntax_errors) return;
+        DeclaracaoVariaveis();
+        while (current_token.type == SMB_SEM && !has_syntax_errors) {
+            CasaToken(SMB_SEM);
+            if (has_syntax_errors) break;
+            if (current_token.type == TOK_BEGIN || current_token.type == TOK_EOF) break;
+            DeclaracaoVariaveis();
+        }
+    }
+}
+
+void DeclaracaoVariaveis() {
+    if (has_syntax_errors) return;
+    printf("Analisando: declaracao de variaveis\n");
+    ListaIdentificadores();
+    if (has_syntax_errors) return;
+    CasaToken(SMB_COLON);
+    if (has_syntax_errors) return;
+    Tipo();
+}
+
+void ListaIdentificadores() {
+    if (has_syntax_errors) return;
+    printf("Analisando: lista de identificadores\n");
+    CasaToken(ID);
+    while (current_token.type == SMB_COM && !has_syntax_errors) {
+        CasaToken(SMB_COM);
+        if (has_syntax_errors) break;
+        CasaToken(ID);
+    }
+}
+
+void Tipo() {
+    if (has_syntax_errors) return;
+    printf("Analisando: tipo\n");
+    if (current_token.type == TOK_INTEGER) {
+        CasaToken(TOK_INTEGER);
+    } else if (current_token.type == TOK_REAL) {
+        CasaToken(TOK_REAL);
+    } else {
+        erro_sintatico("tipo esperado (integer ou real)");
+    }
+}
+
+void ComandoComposto() {
+    if (has_syntax_errors) return;
+    printf("Analisando: comando composto\n");
+    CasaToken(TOK_BEGIN);
+    if (has_syntax_errors) return;
+
+    if (current_token.type == TOK_EOF) {
+        erro_sintatico("comando esperado apos begin");
+        return;
+    }
+    
+    Comando();
+    if (has_syntax_errors) return;
+    CasaToken(SMB_SEM);
+    if (has_syntax_errors) return;
+
+    while (current_token.type != TOK_END && current_token.type != TOK_EOF && !has_syntax_errors) {
+        Comando();
+        if (has_syntax_errors) break;
+        if (current_token.type == TOK_END || current_token.type == TOK_EOF) break;
+        CasaToken(SMB_SEM);
+        if (has_syntax_errors) break;
+    }
+    
+    if (!has_syntax_errors) {
+        CasaToken(TOK_END);
+    }
+}
+
+void Comando() {
+    if (has_syntax_errors || current_token.type == TOK_EOF) return;
+    
+    printf("Analisando: comando\n");
+    
+    if (current_token.type == TOK_EOF) {
+        erro_sintatico("comando esperado");
+        return;
+    }
+    
+    if (current_token.type == ID) {
+        Atribuicao();
+    } else if (current_token.type == TOK_BEGIN) {
+        ComandoComposto();
+    } else if (current_token.type == TOK_IF) {
+        ComandoCondicional();
+    } else if (current_token.type == TOK_WHILE) {
+        ComandoRepetitivo();
+    } else {
+        erro_sintatico("comando esperado");
+        if (current_token.type != TOK_EOF && current_token.type != TOK_ERROR) {
+            current_token = get_next_token(global_lexer);
+        }
+    }
+}
+
+void Atribuicao() {
+    if (has_syntax_errors) return;
+    printf("Analisando: atribuicao\n");
+    Variavel();
+    if (has_syntax_errors) return;
+    CasaToken(OP_ASS);
+    if (has_syntax_errors) return;
+    Expressao();
+}
+
+void ComandoCondicional() {
+    if (has_syntax_errors) return;
+    printf("Analisando: comando condicional\n");
+    CasaToken(TOK_IF);
+    if (has_syntax_errors) return;
+    Expressao();
+    if (has_syntax_errors) return;
+    CasaToken(TOK_THEN);
+    if (has_syntax_errors) return;
+    Comando();
+    if (current_token.type == TOK_ELSE && !has_syntax_errors) {
+        CasaToken(TOK_ELSE);
+        if (has_syntax_errors) return;
+        Comando();
+    }
+}
+
+void ComandoRepetitivo() {
+    if (has_syntax_errors) return;
+    printf("Analisando: comando repetitivo\n");
+    CasaToken(TOK_WHILE);
+    if (has_syntax_errors) return;
+    Expressao();
+    if (has_syntax_errors) return;
+    CasaToken(TOK_DO);
+    if (has_syntax_errors) return;
+    Comando();
+}
+
+void Expressao() {
+    if (has_syntax_errors) return;
+    printf("Analisando: expressao\n");
+    ExpressaoSimples();
+    if (!has_syntax_errors && 
+        (current_token.type == OP_EQ || current_token.type == OP_NE || 
+         current_token.type == OP_LT || current_token.type == OP_LE ||
+         current_token.type == OP_GT || current_token.type == OP_GE)) {
+        Relacao();
+        if (has_syntax_errors) return;
+        ExpressaoSimples();
+    }
+}
+
+void Relacao() {
+    if (has_syntax_errors) return;
+    printf("Analisando: relacao\n");
+    switch (current_token.type) {
+        case OP_EQ: CasaToken(OP_EQ); break;
+        case OP_NE: CasaToken(OP_NE); break;
+        case OP_LT: CasaToken(OP_LT); break;
+        case OP_LE: CasaToken(OP_LE); break;
+        case OP_GT: CasaToken(OP_GT); break;
+        case OP_GE: CasaToken(OP_GE); break;
+        default: erro_sintatico("operador relacional esperado");
+    }
+}
+
+void ExpressaoSimples() {
+    if (has_syntax_errors) return;
+    printf("Analisando: expressao simples\n");
+    if (current_token.type == OP_AD || current_token.type == OP_MIN) {
+        if (current_token.type == OP_AD) CasaToken(OP_AD);
+        else CasaToken(OP_MIN);
+    }
+    if (has_syntax_errors) return;
+    Termo();
+    while (!has_syntax_errors && (current_token.type == OP_AD || current_token.type == OP_MIN)) {
+        if (current_token.type == OP_AD) CasaToken(OP_AD);
+        else CasaToken(OP_MIN);
+        if (has_syntax_errors) break;
+        Termo();
+    }
+}
+
+void Termo() {
+    if (has_syntax_errors) return;
+    printf("Analisando: termo\n");
+    Fator();
+    while (!has_syntax_errors && 
+           (current_token.type == OP_MUL || current_token.type == OP_DIV || 
+            current_token.type == OP_MOD)) { 
+        if (current_token.type == OP_MUL) CasaToken(OP_MUL);
+        else if (current_token.type == OP_DIV) CasaToken(OP_DIV);
+        else if (current_token.type == OP_MOD) CasaToken(OP_MOD); 
+        if (has_syntax_errors) break;
+        Fator();
+    }
+}
+
+void Fator() {
+    if (has_syntax_errors) return;
+    printf("Analisando: fator\n");
+    if (current_token.type == ID) {
+        Variavel();
+    } else if (current_token.type == LIT_INT || current_token.type == LIT_REAL || current_token.type == LIT_REAL_EXP) {
+        if (current_token.type == LIT_INT) CasaToken(LIT_INT);
+        else if (current_token.type == LIT_REAL) CasaToken(LIT_REAL);
+        else CasaToken(LIT_REAL_EXP);
+    } else if (current_token.type == SMB_OPA) {
+        CasaToken(SMB_OPA);
+        if (has_syntax_errors) return;
+        Expressao();
+        if (has_syntax_errors) return;
+        CasaToken(SMB_CPA);
+    } else {
+        erro_sintatico("fator esperado (variavel, numero ou expressao entre parenteses)");
+    }
+}
+
+void Variavel() {
+    if (has_syntax_errors) return;
+    printf("Analisando: variavel\n");
+    CasaToken(ID);
+}
 
 int main(int argc, char* argv[]) {
     if (argc != 2) {
@@ -650,20 +1003,22 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     
+    printf("=== INICIANDO ANALISE LEXICA ===\n");
+    
     FILE* file = fopen(argv[1], "r");
     if (!file) {
         printf("Erro ao abrir arquivo: %s\n", argv[1]);
         return 1;
     }
     
-    Lexer* lexer = init_lexer(file);
+    Lexer* lexer = init_lexer(file, argv[1]);
     
     char output_filename[100];
     snprintf(output_filename, sizeof(output_filename), "%s.lex", argv[1]);
     FILE* output_file = fopen(output_filename, "w");
     
     if (!output_file) {
-        printf("Erro ao criar arquivo de saída\n");
+        printf("Erro ao criar arquivo de saida\n");
         free_lexer(lexer);
         return 1;
     }
@@ -677,13 +1032,13 @@ int main(int argc, char* argv[]) {
     printf("------------------------------------------------\n");
 
     Token token;
-    int has_errors = 0;
+    int has_lexical_errors = 0;
     
     do {
         token = get_next_token(lexer);
         
         if (token.type == TOK_ERROR) {
-            has_errors = 1;
+            has_lexical_errors = 1;
             printf("\033[1;31mERRO\033[0m (Linha %d, Coluna %d): %s\n", 
                    token.line, token.column, token.lexeme);
             fprintf(output_file, "ERRO (Linha %d, Coluna %d): %s\n", 
@@ -702,14 +1057,37 @@ int main(int argc, char* argv[]) {
     print_symbol_table(&lexer->symbol_table);
     
     fclose(output_file);
-    free_lexer(lexer);
     
-    if (has_errors) {
-        printf("\nAnálise léxica concluída com ERROS!\n");
-        return 1;
+    if (has_lexical_errors) {
+        printf("\nAnalise lexica concluida com \033[1;31mERROS!\033[0m\ncontinuando analise sintatica...\n");
     } else {
-        printf("\nAnálise léxica concluída com SUCESSO!\n");
-        printf("Tokens salvos em: %s\n", output_filename);
-        return 0;
+        printf("\nAnalise lexica concluida com SUCESSO!\n");
     }
+    
+    printf("\nTokens salvos em: %s\n", output_filename);
+    
+    printf("\n=== INICIANDO ANALISE SINTATICA ===\n");
+    
+    file = fopen(argv[1], "r");
+    if (!file) {
+        printf("Erro ao reabrir arquivo para analise sintatica: %s\n", argv[1]);
+        return 1;
+    }
+    
+    lexer = init_lexer(file, argv[1]);
+    global_lexer = lexer;
+    
+    current_token = get_next_token(lexer);
+    has_syntax_errors = 0;
+    
+    Programa();
+    
+    if (has_syntax_errors) {
+        printf("\n\033[1;31mAnalise sintatica concluida com ERROS!\033[0m\n");
+    } else {
+        printf("\n\033[1;32mAnalise sintatica concluida com SUCESSO!\033[0m\n");
+    }
+    
+    free_lexer(lexer);
+    return has_syntax_errors || has_lexical_errors;
 }

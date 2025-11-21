@@ -8,8 +8,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": true,
-      "cwd": "c:/Users/leona/OneDrive/Documentos/Compilador-/TESTE",
-      "program": "c:/Users/leona/OneDrive/Documentos/Compilador-/TESTE/build/Debug/outDebug",
+      "cwd": "c:/Users/leona/OneDrive/Documentos/Compilador-/ANALISADOR_LEX_SINT",
+      "program": "c:/Users/leona/OneDrive/Documentos/Compilador-/ANALISADOR_LEX_SINT/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [
