@@ -3,6 +3,8 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdbool.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 #define MAX_SYMBOLS 100
 #define MAX_LEXEME 100
@@ -626,21 +628,21 @@ Token get_next_token(Lexer* lexer) {
             break;
 
         case '\'': {
-            int start_line = lexer->line;
-            int start_column = lexer->column;
-            int i = 0;
+        int start_line = lexer->line;
+        int start_column = lexer->column;
+        int i = 0;
 
-            token.lexeme[i++] = '\''; 
+        token.lexeme[i++] = '\''; 
 
-            lexer->current_char = fgetc(lexer->file);
-            lexer->column++;
+        lexer->current_char = fgetc(lexer->file);
+        lexer->column++;
 
-            while (lexer->current_char != '\'' && lexer->current_char != EOF && lexer->current_char != '\n') {
-                if (i >= MAX_LEXEME - 2) { 
-                    token.type = TOK_ERROR;
-                    sprintf(token.lexeme, "String muito longa na linha %d, coluna %d", start_line, start_column);
-                    return token;
-                }
+        while (lexer->current_char != '\'' && lexer->current_char != EOF && lexer->current_char != '\n') {
+            if (i >= MAX_LEXEME - 2) { 
+                token.type = TOK_ERROR;
+                sprintf(token.lexeme, "String muito longa na linha %d, coluna %d", start_line, start_column);
+                return token;
+            }
                 token.lexeme[i++] = lexer->current_char;
                 lexer->current_char = fgetc(lexer->file);
                 lexer->column++;
@@ -743,7 +745,7 @@ void CasaToken(TokenType tipo_esperado) {
 }
 
 void Programa() {
-    printf("Analisando: programa\n");
+    printf("programa -> program ID ; bloco .\n");
     CasaToken(TOK_PROGRAM);
     if (has_syntax_errors) return;
     CasaToken(ID);
@@ -762,7 +764,7 @@ void Programa() {
 
 void Bloco() {
     if (has_syntax_errors) return;
-    printf("Analisando: bloco\n");
+    printf("bloco -> parte_declaracoes_variaveis comando_composto\n");
     ParteDeclaracoesVariaveis();
     if (has_syntax_errors) return;
     ComandoComposto();
@@ -770,7 +772,7 @@ void Bloco() {
 
 void ParteDeclaracoesVariaveis() {
     if (has_syntax_errors) return;
-    printf("Analisando: parte de declaracoes de variaveis\n");
+    printf("parte_declaracoes_variaveis -> var declaracao_variaveis { ; declaracao_variaveis }\n");
     if (current_token.type == TOK_VAR) {
         CasaToken(TOK_VAR);
         if (has_syntax_errors) return;
@@ -786,7 +788,7 @@ void ParteDeclaracoesVariaveis() {
 
 void DeclaracaoVariaveis() {
     if (has_syntax_errors) return;
-    printf("Analisando: declaracao de variaveis\n");
+    printf("declaracao_variaveis -> lista_identificadores : tipo\n");
     ListaIdentificadores();
     if (has_syntax_errors) return;
     CasaToken(SMB_COLON);
@@ -796,7 +798,7 @@ void DeclaracaoVariaveis() {
 
 void ListaIdentificadores() {
     if (has_syntax_errors) return;
-    printf("Analisando: lista de identificadores\n");
+    printf("lista_identificadores -> ID { , ID }\n");
     CasaToken(ID);
     while (current_token.type == SMB_COM && !has_syntax_errors) {
         CasaToken(SMB_COM);
@@ -807,7 +809,7 @@ void ListaIdentificadores() {
 
 void Tipo() {
     if (has_syntax_errors) return;
-    printf("Analisando: tipo\n");
+    printf("tipo -> integer | real\n");
     if (current_token.type == TOK_INTEGER) {
         CasaToken(TOK_INTEGER);
     } else if (current_token.type == TOK_REAL) {
@@ -819,7 +821,7 @@ void Tipo() {
 
 void ComandoComposto() {
     if (has_syntax_errors) return;
-    printf("Analisando: comando composto\n");
+    printf("comando_composto -> begin comando ; { comando ; } end\n");
     CasaToken(TOK_BEGIN);
     if (has_syntax_errors) return;
 
@@ -849,7 +851,7 @@ void ComandoComposto() {
 void Comando() {
     if (has_syntax_errors || current_token.type == TOK_EOF) return;
     
-    printf("Analisando: comando\n");
+    printf("comando -> atribuicao | comando_composto | comando_condicional | comando_repetitivo\n");
     
     if (current_token.type == TOK_EOF) {
         erro_sintatico("comando esperado");
@@ -874,7 +876,7 @@ void Comando() {
 
 void Atribuicao() {
     if (has_syntax_errors) return;
-    printf("Analisando: atribuicao\n");
+    printf("atribuicao -> variavel := expressao\n");
     Variavel();
     if (has_syntax_errors) return;
     CasaToken(OP_ASS);
@@ -884,7 +886,7 @@ void Atribuicao() {
 
 void ComandoCondicional() {
     if (has_syntax_errors) return;
-    printf("Analisando: comando condicional\n");
+    printf("comando_condicional -> if expressao then comando [ else comando ]\n");
     CasaToken(TOK_IF);
     if (has_syntax_errors) return;
     Expressao();
@@ -901,7 +903,7 @@ void ComandoCondicional() {
 
 void ComandoRepetitivo() {
     if (has_syntax_errors) return;
-    printf("Analisando: comando repetitivo\n");
+    printf("comando_repetitivo -> while expressao do comando\n");
     CasaToken(TOK_WHILE);
     if (has_syntax_errors) return;
     Expressao();
@@ -913,7 +915,7 @@ void ComandoRepetitivo() {
 
 void Expressao() {
     if (has_syntax_errors) return;
-    printf("Analisando: expressao\n");
+    printf("expressao -> expressao_simples [ relacao expressao_simples ]\n");
     ExpressaoSimples();
     if (!has_syntax_errors && 
         (current_token.type == OP_EQ || current_token.type == OP_NE || 
@@ -927,7 +929,7 @@ void Expressao() {
 
 void Relacao() {
     if (has_syntax_errors) return;
-    printf("Analisando: relacao\n");
+    printf("relacao -> = | < | <= | >= | > | <>\n");
     switch (current_token.type) {
         case OP_EQ: CasaToken(OP_EQ); break;
         case OP_NE: CasaToken(OP_NE); break;
@@ -941,7 +943,7 @@ void Relacao() {
 
 void ExpressaoSimples() {
     if (has_syntax_errors) return;
-    printf("Analisando: expressao simples\n");
+    printf("expressao_simples -> [+ | -] termo { (+ | - ) termo }\n");
     if (current_token.type == OP_AD || current_token.type == OP_MIN) {
         if (current_token.type == OP_AD) CasaToken(OP_AD);
         else CasaToken(OP_MIN);
@@ -958,7 +960,7 @@ void ExpressaoSimples() {
 
 void Termo() {
     if (has_syntax_errors) return;
-    printf("Analisando: termo\n");
+    printf("termo -> fator { (* | / | mod) fator }\n");
     Fator();
     while (!has_syntax_errors && 
            (current_token.type == OP_MUL || current_token.type == OP_DIV || 
@@ -973,7 +975,7 @@ void Termo() {
 
 void Fator() {
     if (has_syntax_errors) return;
-    printf("Analisando: fator\n");
+    printf("fator -> variavel | numero | ( expressao )\n");
     if (current_token.type == ID) {
         Variavel();
     } else if (current_token.type == LIT_INT || current_token.type == LIT_REAL || current_token.type == LIT_REAL_EXP) {
@@ -993,7 +995,7 @@ void Fator() {
 
 void Variavel() {
     if (has_syntax_errors) return;
-    printf("Analisando: variavel\n");
+    printf("variavel -> ID\n");
     CasaToken(ID);
 }
 
@@ -1086,6 +1088,33 @@ int main(int argc, char* argv[]) {
         printf("\n\033[1;31mAnalise sintatica concluida com ERROS!\033[0m\n");
     } else {
         printf("\n\033[1;32mAnalise sintatica concluida com SUCESSO!\033[0m\n");
+    }
+    
+    char syntax_filename[100];
+    snprintf(syntax_filename, sizeof(syntax_filename), "%s.syntax", argv[1]);
+    FILE* syntax_file = fopen(syntax_filename, "w");
+    
+    if (syntax_file) {
+        int saved_stdout = dup(fileno(stdout));
+        freopen(syntax_filename, "w", stdout);
+        
+        rewind(file);
+        Lexer* syntax_lexer = init_lexer(file, argv[1]);
+        global_lexer = syntax_lexer;
+        current_token = get_next_token(syntax_lexer);
+        has_syntax_errors = 0;
+        
+        printf("=== SEQUENCIA DE REGRAS DE PRODUCAO ===\n");
+        Programa();
+        
+        fflush(stdout);
+        dup2(saved_stdout, fileno(stdout));
+        close(saved_stdout);
+        
+        fclose(syntax_file);
+        free_lexer(syntax_lexer);
+        
+        printf("\nRegras de producao salvas em: %s\n", syntax_filename);
     }
     
     free_lexer(lexer);
