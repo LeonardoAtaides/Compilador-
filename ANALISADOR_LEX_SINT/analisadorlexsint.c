@@ -80,28 +80,28 @@ Token current_token;
 int has_syntax_errors = 0;
 char* current_filename = NULL;
 
-void CasaToken(TokenType tipo_esperado);
-void erro_sintatico(const char* mensagem);
-void verifica_fim_arquivo();
-void mostrar_contexto_erro();
+void TokenHouse(TokenType tipo_esperado);
+void SyntacticError(const char* mensagem);
+void EndFile();
+void ShowError();
 
-void Programa();
-void Bloco();
-void ParteDeclaracoesVariaveis();
-void DeclaracaoVariaveis();
-void ListaIdentificadores();
-void Tipo();
-void ComandoComposto();
-void Comando();
-void Atribuicao();
-void ComandoCondicional();
-void ComandoRepetitivo();
-void Expressao();
-void Relacao();
-void ExpressaoSimples();
-void Termo();
-void Fator();
-void Variavel();
+void Program();
+void Block();
+void PartVariableDeclarations();
+void VariableDeclararion();
+void ListIdentifiers();
+void Type();
+void CompoundCommand();
+void Command();
+void Assignment();
+void AdditionalCommand();
+void RepetitiveCommand();
+void Expression();
+void Relation();
+void SimpleExpression();
+void Term();
+void Factor();
+void Variable();
 
 const char* token_type_to_string(TokenType type) {
     switch (type) {
@@ -673,7 +673,7 @@ Token get_next_token(Lexer* lexer) {
 }
 
 
-void mostrar_contexto_erro() {
+void ShowError() {
     if (global_lexer == NULL || global_lexer->file == NULL) return;
     
     long current_pos = ftell(global_lexer->file);
@@ -713,7 +713,7 @@ void mostrar_contexto_erro() {
     fseek(global_lexer->file, current_pos, SEEK_SET);
 }
 
-void erro_sintatico(const char* mensagem) {
+void SyntacticError(const char* mensagem) {
     printf("\033[1;31mERRO SINTATICO (Linha %d): %s", current_token.line, mensagem);
     
     if (current_token.type == TOK_EOF) {
@@ -722,281 +722,281 @@ void erro_sintatico(const char* mensagem) {
         printf(" - encontrado [%s]\033[0m\n", current_token.lexeme);
     }
     
-    mostrar_contexto_erro();
+    ShowError();
     
     has_syntax_errors = 1;
 }
 
-void verifica_fim_arquivo() {
+void EndFile() {
     if (current_token.type != TOK_EOF && !has_syntax_errors) {
-        erro_sintatico("simbolos extras apos fim do programa");
+        SyntacticError("simbolos extras apos fim do programa");
     }
 }
 
-void CasaToken(TokenType tipo_esperado) {
+void TokenHouse(TokenType tipo_esperado) {
     if (current_token.type == tipo_esperado) {
         current_token = get_next_token(global_lexer);
     } else {
-        erro_sintatico("token nao esperado");
+        SyntacticError("token nao esperado");
         if (current_token.type != TOK_EOF && current_token.type != TOK_ERROR) {
             current_token = get_next_token(global_lexer);
         }
     }
 }
 
-void Programa() {
+void Program() {
     printf("programa -> program ID ; bloco .\n");
-    CasaToken(TOK_PROGRAM);
+    TokenHouse(TOK_PROGRAM);
     if (has_syntax_errors) return;
-    CasaToken(ID);
+    TokenHouse(ID);
     if (has_syntax_errors) return;
-    CasaToken(SMB_SEM);
+    TokenHouse(SMB_SEM);
     if (has_syntax_errors) return;
-    Bloco();
+    Block();
     if (has_syntax_errors) return;
-    CasaToken(SMB_DOT);
+    TokenHouse(SMB_DOT);
     if (!has_syntax_errors) {
         printf("Programa analisado com sucesso!\n");
     }
     
-    verifica_fim_arquivo();
+    EndFile();
 }
 
-void Bloco() {
+void Block() {
     if (has_syntax_errors) return;
     printf("bloco -> parte_declaracoes_variaveis comando_composto\n");
-    ParteDeclaracoesVariaveis();
+    PartVariableDeclarations();
     if (has_syntax_errors) return;
-    ComandoComposto();
+    CompoundCommand();
 }
 
-void ParteDeclaracoesVariaveis() {
+void PartVariableDeclarations() {
     if (has_syntax_errors) return;
     printf("parte_declaracoes_variaveis -> var declaracao_variaveis { ; declaracao_variaveis }\n");
     if (current_token.type == TOK_VAR) {
-        CasaToken(TOK_VAR);
+        TokenHouse(TOK_VAR);
         if (has_syntax_errors) return;
-        DeclaracaoVariaveis();
+        VariableDeclararion();
         while (current_token.type == SMB_SEM && !has_syntax_errors) {
-            CasaToken(SMB_SEM);
+            TokenHouse(SMB_SEM);
             if (has_syntax_errors) break;
             if (current_token.type == TOK_BEGIN || current_token.type == TOK_EOF) break;
-            DeclaracaoVariaveis();
+            VariableDeclararion();
         }
     }
 }
 
-void DeclaracaoVariaveis() {
+void VariableDeclararion() {
     if (has_syntax_errors) return;
     printf("declaracao_variaveis -> lista_identificadores : tipo\n");
-    ListaIdentificadores();
+    ListIdentifiers();
     if (has_syntax_errors) return;
-    CasaToken(SMB_COLON);
+    TokenHouse(SMB_COLON);
     if (has_syntax_errors) return;
-    Tipo();
+    Type();
 }
 
-void ListaIdentificadores() {
+void ListIdentifiers() {
     if (has_syntax_errors) return;
     printf("lista_identificadores -> ID { , ID }\n");
-    CasaToken(ID);
+    TokenHouse(ID);
     while (current_token.type == SMB_COM && !has_syntax_errors) {
-        CasaToken(SMB_COM);
+        TokenHouse(SMB_COM);
         if (has_syntax_errors) break;
-        CasaToken(ID);
+        TokenHouse(ID);
     }
 }
 
-void Tipo() {
+void Type() {
     if (has_syntax_errors) return;
     printf("tipo -> integer | real\n");
     if (current_token.type == TOK_INTEGER) {
-        CasaToken(TOK_INTEGER);
+        TokenHouse(TOK_INTEGER);
     } else if (current_token.type == TOK_REAL) {
-        CasaToken(TOK_REAL);
+        TokenHouse(TOK_REAL);
     } else {
-        erro_sintatico("tipo esperado (integer ou real)");
+        SyntacticError("tipo esperado (integer ou real)");
     }
 }
 
-void ComandoComposto() {
+void CompoundCommand() {
     if (has_syntax_errors) return;
     printf("comando_composto -> begin comando ; { comando ; } end\n");
-    CasaToken(TOK_BEGIN);
+    TokenHouse(TOK_BEGIN);
     if (has_syntax_errors) return;
 
     if (current_token.type == TOK_EOF) {
-        erro_sintatico("comando esperado apos begin");
+        SyntacticError("comando esperado apos begin");
         return;
     }
     
-    Comando();
+    Command();
     if (has_syntax_errors) return;
-    CasaToken(SMB_SEM);
+    TokenHouse(SMB_SEM);
     if (has_syntax_errors) return;
 
     while (current_token.type != TOK_END && current_token.type != TOK_EOF && !has_syntax_errors) {
-        Comando();
+        Command();
         if (has_syntax_errors) break;
         if (current_token.type == TOK_END || current_token.type == TOK_EOF) break;
-        CasaToken(SMB_SEM);
+        TokenHouse(SMB_SEM);
         if (has_syntax_errors) break;
     }
     
     if (!has_syntax_errors) {
-        CasaToken(TOK_END);
+        TokenHouse(TOK_END);
     }
 }
 
-void Comando() {
+void Command() {
     if (has_syntax_errors || current_token.type == TOK_EOF) return;
     
     printf("comando -> atribuicao | comando_composto | comando_condicional | comando_repetitivo\n");
     
     if (current_token.type == TOK_EOF) {
-        erro_sintatico("comando esperado");
+        SyntacticError("comando esperado");
         return;
     }
     
     if (current_token.type == ID) {
-        Atribuicao();
+        Assignment();
     } else if (current_token.type == TOK_BEGIN) {
-        ComandoComposto();
+        CompoundCommand();
     } else if (current_token.type == TOK_IF) {
-        ComandoCondicional();
+        AdditionalCommand();
     } else if (current_token.type == TOK_WHILE) {
-        ComandoRepetitivo();
+        RepetitiveCommand();
     } else {
-        erro_sintatico("comando esperado");
+        SyntacticError("comando esperado");
         if (current_token.type != TOK_EOF && current_token.type != TOK_ERROR) {
             current_token = get_next_token(global_lexer);
         }
     }
 }
 
-void Atribuicao() {
+void Assignment() {
     if (has_syntax_errors) return;
     printf("atribuicao -> variavel := expressao\n");
-    Variavel();
+    Variable();
     if (has_syntax_errors) return;
-    CasaToken(OP_ASS);
+    TokenHouse(OP_ASS);
     if (has_syntax_errors) return;
-    Expressao();
+    Expression();
 }
 
-void ComandoCondicional() {
+void AdditionalCommand() {
     if (has_syntax_errors) return;
     printf("comando_condicional -> if expressao then comando [ else comando ]\n");
-    CasaToken(TOK_IF);
+    TokenHouse(TOK_IF);
     if (has_syntax_errors) return;
-    Expressao();
+    Expression();
     if (has_syntax_errors) return;
-    CasaToken(TOK_THEN);
+    TokenHouse(TOK_THEN);
     if (has_syntax_errors) return;
-    Comando();
+    Command();
     if (current_token.type == TOK_ELSE && !has_syntax_errors) {
-        CasaToken(TOK_ELSE);
+        TokenHouse(TOK_ELSE);
         if (has_syntax_errors) return;
-        Comando();
+        Command();
     }
 }
 
-void ComandoRepetitivo() {
+void RepetitiveCommand() {
     if (has_syntax_errors) return;
     printf("comando_repetitivo -> while expressao do comando\n");
-    CasaToken(TOK_WHILE);
+    TokenHouse(TOK_WHILE);
     if (has_syntax_errors) return;
-    Expressao();
+    Expression();
     if (has_syntax_errors) return;
-    CasaToken(TOK_DO);
+    TokenHouse(TOK_DO);
     if (has_syntax_errors) return;
-    Comando();
+    Command();
 }
 
-void Expressao() {
+void Expression() {
     if (has_syntax_errors) return;
     printf("expressao -> expressao_simples [ relacao expressao_simples ]\n");
-    ExpressaoSimples();
+    SimpleExpression();
     if (!has_syntax_errors && 
         (current_token.type == OP_EQ || current_token.type == OP_NE || 
          current_token.type == OP_LT || current_token.type == OP_LE ||
          current_token.type == OP_GT || current_token.type == OP_GE)) {
-        Relacao();
+        Relation();
         if (has_syntax_errors) return;
-        ExpressaoSimples();
+        SimpleExpression();
     }
 }
 
-void Relacao() {
+void Relation() {
     if (has_syntax_errors) return;
     printf("relacao -> = | < | <= | >= | > | <>\n");
     switch (current_token.type) {
-        case OP_EQ: CasaToken(OP_EQ); break;
-        case OP_NE: CasaToken(OP_NE); break;
-        case OP_LT: CasaToken(OP_LT); break;
-        case OP_LE: CasaToken(OP_LE); break;
-        case OP_GT: CasaToken(OP_GT); break;
-        case OP_GE: CasaToken(OP_GE); break;
-        default: erro_sintatico("operador relacional esperado");
+        case OP_EQ: TokenHouse(OP_EQ); break;
+        case OP_NE: TokenHouse(OP_NE); break;
+        case OP_LT: TokenHouse(OP_LT); break;
+        case OP_LE: TokenHouse(OP_LE); break;
+        case OP_GT: TokenHouse(OP_GT); break;
+        case OP_GE: TokenHouse(OP_GE); break;
+        default: SyntacticError("operador relacional esperado");
     }
 }
 
-void ExpressaoSimples() {
+void SimpleExpression() {
     if (has_syntax_errors) return;
     printf("expressao_simples -> [+ | -] termo { (+ | - ) termo }\n");
     if (current_token.type == OP_AD || current_token.type == OP_MIN) {
-        if (current_token.type == OP_AD) CasaToken(OP_AD);
-        else CasaToken(OP_MIN);
+        if (current_token.type == OP_AD) TokenHouse(OP_AD);
+        else TokenHouse(OP_MIN);
     }
     if (has_syntax_errors) return;
-    Termo();
+    Term();
     while (!has_syntax_errors && (current_token.type == OP_AD || current_token.type == OP_MIN)) {
-        if (current_token.type == OP_AD) CasaToken(OP_AD);
-        else CasaToken(OP_MIN);
+        if (current_token.type == OP_AD) TokenHouse(OP_AD);
+        else TokenHouse(OP_MIN);
         if (has_syntax_errors) break;
-        Termo();
+        Term();
     }
 }
 
-void Termo() {
+void Term() {
     if (has_syntax_errors) return;
     printf("termo -> fator { (* | / | mod) fator }\n");
-    Fator();
+    Factor();
     while (!has_syntax_errors && 
            (current_token.type == OP_MUL || current_token.type == OP_DIV || 
             current_token.type == OP_MOD)) { 
-        if (current_token.type == OP_MUL) CasaToken(OP_MUL);
-        else if (current_token.type == OP_DIV) CasaToken(OP_DIV);
-        else if (current_token.type == OP_MOD) CasaToken(OP_MOD); 
+        if (current_token.type == OP_MUL) TokenHouse(OP_MUL);
+        else if (current_token.type == OP_DIV) TokenHouse(OP_DIV);
+        else if (current_token.type == OP_MOD) TokenHouse(OP_MOD); 
         if (has_syntax_errors) break;
-        Fator();
+        Factor();
     }
 }
 
-void Fator() {
+void Factor() {
     if (has_syntax_errors) return;
     printf("fator -> variavel | numero | ( expressao )\n");
     if (current_token.type == ID) {
-        Variavel();
+        Variable();
     } else if (current_token.type == LIT_INT || current_token.type == LIT_REAL || current_token.type == LIT_REAL_EXP) {
-        if (current_token.type == LIT_INT) CasaToken(LIT_INT);
-        else if (current_token.type == LIT_REAL) CasaToken(LIT_REAL);
-        else CasaToken(LIT_REAL_EXP);
+        if (current_token.type == LIT_INT) TokenHouse(LIT_INT);
+        else if (current_token.type == LIT_REAL) TokenHouse(LIT_REAL);
+        else TokenHouse(LIT_REAL_EXP);
     } else if (current_token.type == SMB_OPA) {
-        CasaToken(SMB_OPA);
+        TokenHouse(SMB_OPA);
         if (has_syntax_errors) return;
-        Expressao();
+        Expression();
         if (has_syntax_errors) return;
-        CasaToken(SMB_CPA);
+        TokenHouse(SMB_CPA);
     } else {
-        erro_sintatico("fator esperado (variavel, numero ou expressao entre parenteses)");
+        SyntacticError("fator esperado (variavel, numero ou expressao entre parenteses)");
     }
 }
 
-void Variavel() {
+void Variable() {
     if (has_syntax_errors) return;
     printf("variavel -> ID\n");
-    CasaToken(ID);
+    TokenHouse(ID);
 }
 
 int main(int argc, char* argv[]) {
@@ -1063,10 +1063,10 @@ int main(int argc, char* argv[]) {
     if (has_lexical_errors) {
         printf("\nAnalise lexica concluida com \033[1;31mERROS!\033[0m\ncontinuando analise sintatica...\n");
     } else {
-        printf("\nAnalise lexica concluida com SUCESSO!\n");
+        printf("\n\033[1;32mAnalise lexica concluida com SUCESSO!\033[0m\n");
     }
     
-    printf("\nTokens salvos em: %s\n", output_filename);
+    printf("\n\033[1;35mTokens salvos em:\033[0m %s\n", output_filename);
     
     printf("\n\t---- ANALISE SINTATICA ----\n");
     
@@ -1082,7 +1082,7 @@ int main(int argc, char* argv[]) {
     current_token = get_next_token(lexer);
     has_syntax_errors = 0;
     
-    Programa();
+    Program();
     
     if (has_syntax_errors) {
         printf("\n\033[1;31mAnalise sintatica concluida com ERROS!\033[0m\n");
@@ -1105,7 +1105,7 @@ int main(int argc, char* argv[]) {
         has_syntax_errors = 0;
         
         printf("=== SEQUENCIA DE REGRAS DE PRODUCAO ===\n");
-        Programa();
+        Program();
         
         fflush(stdout);
         dup2(saved_stdout, fileno(stdout));
@@ -1114,7 +1114,7 @@ int main(int argc, char* argv[]) {
         fclose(syntax_file);
         free_lexer(syntax_lexer);
         
-        printf("\nRegras de producao salvas em: %s\n", syntax_filename);
+        printf("\n\033[1;35mRegras de producao salvas em:\033[0m %s\n", syntax_filename);
     }
     
     free_lexer(lexer);
